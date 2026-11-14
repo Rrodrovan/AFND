@@ -1,0 +1,87 @@
+openapi: 3.0.3
+info:
+  title: TerraShift API
+  version: 0.1.0
+  description: >
+    API REST del backend de TerraShift. Esta especificación es la referencia de contrato;
+    el backend también publica la suya en /api/docs y la interfaz en /api/swagger-ui.html.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/v1/health:
+    get:
+      summary: Estado del servicio y de la base de datos
+      responses:
+        "200":
+          description: Servicio activo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: up }
+                  database: { type: string, enum: [up, down] }
+  /api/v1/strategies:
+    get:
+      summary: Lista las estrategias de rotación
+      responses:
+        "200":
+          description: Estrategias disponibles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Strategy"
+  /api/v1/strategies/compare:
+    get:
+      summary: Compara las estrategias para una zona
+      parameters:
+        - name: zone
+          in: query
+          required: true
+          description: Código de la zona (por ejemplo, piloto)
+          schema: { type: string }
+      responses:
+        "200":
+          description: Comparación por estrategia con sus indicadores
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComparisonResponse"
+        "404":
+          description: La zona no existe
+components:
+  schemas:
+    Strategy:
+      type: object
+      properties:
+        id: { type: integer }
+        code: { type: string, example: E1 }
+        name: { type: string }
+        focus: { type: string }
+    Indicator:
+      type: object
+      properties:
+        crop: { type: string }
+        scenario: { type: string, enum: [normal, seco, canicula] }
+        indicator: { type: string }
+        value: { type: number, nullable: true }
+        min: { type: number, nullable: true }
+        max: { type: number, nullable: true }
+        unit: { type: string, nullable: true }
+    StrategyComparison:
+      type: object
+      properties:
+        strategy: { $ref: "#/components/schemas/Strategy" }
+        indicators:
+          type: array
+          items: { $ref: "#/components/schemas/Indicator" }
+    ComparisonResponse:
+      type: object
+      properties:
+        zone: { type: string }
+        strategies:
+          type: array
+          items: { $ref: "#/components/schemas/StrategyComparison" }
+        note: { type: string }
