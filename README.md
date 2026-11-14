@@ -1,4 +1,4 @@
-# AFND — Field Shift: Adapting Farms with NASA Data
+# TerraShift — Field Shift: Adapting Farms with NASA Data
 
 > Sistema de Apoyo a la Toma de Decisiones (DSS) para comparar estrategias de rotación de cultivos frente a la sequía y la degradación del suelo, usando datos satelitales y climáticos de la NASA.
 
@@ -44,7 +44,7 @@ Los problemas que enfrentan los pequeños productores se refuerzan entre sí:
 
 ### Nuestra solución
 
-AFND es un **DSS (Decision Support System)** que cruza datos de observación de la Tierra de la NASA con parámetros edáficos para **comparar, bajo un mismo marco cuantitativo, tres estrategias de rotación de cultivos**: una línea base tradicional, una orientada a la conservación hídrica y una orientada a la regeneración de suelos.
+TerraShift es un **DSS (Decision Support System)** que cruza datos de observación de la Tierra de la NASA con parámetros edáficos para **comparar, bajo un mismo marco cuantitativo, tres estrategias de rotación de cultivos**: una línea base tradicional, una orientada a la conservación hídrica y una orientada a la regeneración de suelos.
 
 El sistema responde a la pregunta central del productor y del técnico de extensión:
 
@@ -221,7 +221,7 @@ flowchart LR
 ## 4. Estructura propuesta del repositorio
 
 ```
-AFND/
+TerraShift/
 ├── README.md
 ├── docker-compose.yml
 ├── .env.example
@@ -379,8 +379,8 @@ Prioridad: tener un **flujo completo de extremo a extremo** (aunque simple) lo a
 
 ```bash
 # 1. Clonar
-git clone https://github.com/Rrodrovan/AFND.git
-cd AFND
+git clone https://github.com/Rrodrovan/TerraShift.git
+cd TerraShift
 
 # 2. Configurar variables de entorno
 cp .env.example .env
@@ -449,7 +449,7 @@ Esta sección separa lo que el proyecto **sí hace** de lo que **no hace**, y pa
 
 ### 9.3 Uso responsable
 
-- AFND es una herramienta de **apoyo a la decisión**, no sustituye la asesoría de un técnico agrónomo.
+- TerraShift es una herramienta de **apoyo a la decisión**, no sustituye la asesoría de un técnico agrónomo.
 - Toda recomendación muestra los análogos y la incertidumbre que la respaldan.
 
 ### 9.4 Trabajo futuro
