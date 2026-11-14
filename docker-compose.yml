@@ -1,0 +1,68 @@
+name: terrashift
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: terrashift-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-terrashift}
+      POSTGRES_USER: ${POSTGRES_USER:-terrashift}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en el archivo .env}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+      - ./database/seeds:/seeds:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-terrashift} -d ${POSTGRES_DB:-terrashift}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - terrashift-net
+
+  python-etl:
+    build: ./python-etl
+    container_name: terrashift-etl
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-terrashift}
+      POSTGRES_USER: ${POSTGRES_USER:-terrashift}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      EARTHDATA_USERNAME: ${EARTHDATA_USERNAME:-}
+      EARTHDATA_PASSWORD: ${EARTHDATA_PASSWORD:-}
+      PILOT_ZONE_BBOX: ${PILOT_ZONE_BBOX}
+      ETL_START_DATE: ${ETL_START_DATE:-2015-04-01}
+      ETL_END_DATE: ${ETL_END_DATE:-2025-12-31}
+    volumes:
+      - ./data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    # El contenedor queda activo; la ingesta se lanza con `docker compose run --rm python-etl ...`
+    command: ["sleep", "infinity"]
+    networks:
+      - terrashift-net
+
+  java-backend:
+    build: ./java-backend
+    container_name: terrashift-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-terrashift}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-terrashift}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - terrashift-net
+
+volumes:
+  pgdata:
+
+networks:
+  terrashift-net:
