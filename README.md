@@ -1,4 +1,4 @@
-# TerraShift — Field Shift: Adapting Farms with NASA Data
+# TerraShift: Dry Corridor DSS — Field Shift: Adapting Farms with NASA Data
 
 > Sistema de Apoyo a la Toma de Decisiones (DSS) para comparar estrategias de rotación de cultivos frente a la sequía y la degradación del suelo, usando datos satelitales y climáticos de la NASA.
 
