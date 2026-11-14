@@ -4,7 +4,7 @@
 
 **NASA Space Apps Challenge 2026** · Reto: *Field Shift: Adapting Farms with NASA Data*
 **Equipo:** Los zzz · **Sede:** Managua, Nicaragua
-**Caso piloto:** Corredor Seco de Nicaragua (maíz, frijol y sorgo)
+**Caso piloto:** Corredor Seco de Nicaragua (maíz y frijol)
 
 | Estado | Fase |
 |---|---|
@@ -24,7 +24,7 @@
 6. [Roadmap de desarrollo (MVP)](#6-roadmap-de-desarrollo-mvp)
 7. [Puesta en marcha](#7-puesta-en-marcha-objetivo)
 8. [Fuentes de datos NASA](#8-fuentes-de-datos-nasa)
-9. [Limitaciones y alcance](#9-limitaciones-y-alcance)
+9. [Alcance y limitaciones](#9-alcance-y-limitaciones)
 10. [Equipo y licencia](#10-equipo-y-licencia)
 
 ---
@@ -33,7 +33,7 @@
 
 ### El problema
 
-El **Corredor Seco** es una franja de bosque tropical seco que atraviesa Centroamérica y abarca buena parte del Pacífico y el centro-norte de Nicaragua. Allí, miles de familias dependen de la agricultura de subsistencia de **granos básicos** (maíz, frijol y sorgo) cultivada en secano, es decir, sin riego y sujeta al régimen de lluvias.
+El **Corredor Seco** es una franja de bosque tropical seco que atraviesa Centroamérica y abarca buena parte del Pacífico y el centro-norte de Nicaragua. Allí, miles de familias dependen de la agricultura de subsistencia de **granos básicos** (maíz y frijol) cultivada en secano, es decir, sin riego y sujeta al régimen de lluvias.
 
 Los problemas que enfrentan los pequeños productores se refuerzan entre sí:
 
@@ -103,7 +103,7 @@ Una región entra al conjunto de análogos si cumple **todos** los criterios obl
 
 ### 2.2 Registro de análogos
 
-> Completar con el resultado de la investigación. Cada fila debe tener una referencia verificable en `docs/referencias.md`.
+> Falta completar con el resultado de la investigación. Cada fila debe tener una referencia verificable en `docs/referencias.md`.
 
 | ID | Región análoga | País | Rasgo climático | Rasgo edáfico | Estrategia evidenciada | Referencia |
 |---|---|---|---|---|---|---|
@@ -211,7 +211,7 @@ flowchart LR
 | `soil_moisture` | Humedad de suelo por zona y fecha (origen SMAP). |
 | `vegetation_index` | NDVI/EVI por zona y fecha (origen Landsat/MODIS). |
 | `soil_profile` | Parámetros edáficos por zona. |
-| `crop` | Maíz, frijol, sorgo y parámetros de ciclo. |
+| `crop` | maíz, frijol y parámetros de ciclo. |
 | `strategy` | Las 3 estrategias de rotación y su definición. |
 | `analog_region` | Regiones análogas y sus referencias. |
 | `strategy_result` | Resultado de cada estrategia por zona y escenario. |
@@ -420,15 +420,43 @@ Todos los datos de NASA se usan conforme a sus políticas de datos abiertos, con
 
 ---
 
-## 9. Limitaciones y alcance
+## 9. Alcance y limitaciones
 
-Para ser transparentes con los jueces y con los futuros usuarios:
+Esta sección separa lo que el proyecto **sí hace** de lo que **no hace**, y para cada limitación indica su impacto y cómo la mitigamos.
 
-- **Es una herramienta de apoyo a la decisión, no un oráculo.** Los resultados son estimaciones con incertidumbre y no sustituyen la asesoría de un técnico agrónomo.
-- **La evidencia proviene de regiones análogas**, no de ensayos de largo plazo en Nicaragua. Mientras no existan series hiperlocales abiertas, el nivel de confianza se reporta explícitamente.
-- **Resolución espacial:** SMAP tiene resolución gruesa (decenas de km); el sistema trabaja a escala de zona/municipio y no de parcela individual.
-- **Alcance del piloto:** granos básicos (maíz, frijol, sorgo) en el Corredor Seco de Nicaragua.
-- **Trabajo futuro:** incorporar datos de campo de productores, validar con ensayos locales y ampliar a otros cultivos y países.
+### 9.1 Alcance
+
+| Dimensión | Dentro del alcance (MVP) | Fuera del alcance (por ahora) |
+|---|---|---|
+| **Territorio** | Corredor Seco de Nicaragua, zona(s) piloto | Otros países o regiones húmedas |
+| **Cultivos** | maíz y frijol | Hortalizas, café, frutales, ganadería |
+| **Estrategias** | Las 3 estrategias de rotación definidas (sección 5) | Prácticas no incluidas en la investigación |
+| **Escala espacial** | Zona / municipio | Parcela individual |
+| **Datos** | NASA POWER, SMAP, Landsat/MODIS y parámetros edáficos | Datos de campo propios de productores |
+| **Resultado** | Comparación cuantitativa con incertidumbre | Recomendaciones agronómicas personalizadas o prescriptivas |
+| **Usuarios** | Técnicos de extensión, productores asistidos y evaluadores | Uso comercial o certificación |
+
+### 9.2 Limitaciones, impacto y mitigación
+
+| # | Limitación | Impacto en los resultados | Mitigación |
+|---|---|---|---|
+| L1 | No hay series históricas hiperlocales abiertas en Nicaragua | Los efectos de cada estrategia no se calibran con ensayos locales | Transferencia desde análogos con factores de ajuste (sección 2.3) |
+| L2 | La evidencia proviene de regiones análogas, no del piloto | Posible sesgo si la análoga difiere en rasgos no medidos | Criterios de selección explícitos y análisis de sensibilidad |
+| L3 | SMAP tiene resolución gruesa (decenas de km) | No distingue diferencias entre parcelas vecinas | Trabajar a escala de zona y complementar con NDVI de Landsat/MODIS |
+| L4 | Los parámetros edáficos tienen cobertura y detalle limitados | Menor precisión en retención de agua y materia orgánica | Reportar rangos, no valores puntuales |
+| L5 | Los resultados son estimaciones, no mediciones | Pueden no reflejar un año o finca concreta | Intervalos de incertidumbre y nivel de confianza en cada resultado |
+| L6 | El tiempo del hackathon limita la validación | Validación parcial contra señal satelital | Priorizar validación de las métricas clave y documentar lo pendiente |
+
+### 9.3 Uso responsable
+
+- AFND es una herramienta de **apoyo a la decisión**, no sustituye la asesoría de un técnico agrónomo.
+- Toda recomendación muestra los análogos y la incertidumbre que la respaldan.
+
+### 9.4 Trabajo futuro
+
+- Incorporar datos de campo de productores.
+- Validar con ensayos locales en el Corredor Seco.
+- Ampliar a otros cultivos y países de la región.
 
 ---
 
@@ -438,11 +466,12 @@ Para ser transparentes con los jueces y con los futuros usuarios:
 
 | Integrante | Rol |
 |---|---|
+| `Rodrigo Ivan Ramírez Dávalos` | `Desarrollador` |
 | `[COMPLETAR]` | `[COMPLETAR]` |
 | `[COMPLETAR]` | `[COMPLETAR]` |
 | `[COMPLETAR]` | `[COMPLETAR]` |
 
-**Licencia:** `[COMPLETAR — por ejemplo MIT para el código y CC BY 4.0 para la documentación]`
+**Licencia:** `[Espacio para las licencias]`
 
 ---
 
