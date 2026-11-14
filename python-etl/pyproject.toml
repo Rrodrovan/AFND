@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "terrashift-etl"
+version = "0.1.0"
+description = "Motor analítico / ETL de TerraShift: ingesta de datos NASA y cálculo de métricas agronómicas."
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31",
+    "psycopg[binary]>=3.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+# Se activarán al implementar SMAP y Landsat/MODIS:
+# nasa = ["earthaccess", "rasterio", "numpy", "pandas"]
+
+# El código se ejecuta como `python -m src.cli`; este paquete solo instala dependencias.
+[tool.setuptools]
+py-modules = []
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
