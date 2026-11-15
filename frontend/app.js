@@ -197,27 +197,33 @@
     zoneInput.value = code;
   }
 
+  // Con el servidor disponible el menú empieza vacío ("Elige una zona…"): el mapa no dibuja nada hasta elegir.
   function fillZoneMenu(zones) {
-    var current = zoneInput.value || cfg.defaultZone;
     zoneInput.textContent = "";
+    var placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Elige una zona…";
+    zoneInput.appendChild(placeholder);
     (zones || []).forEach(function (z) {
       var option = document.createElement("option");
       option.value = z.code;
       option.textContent = z.name || z.code;
       zoneInput.appendChild(option);
     });
-    setZone(current);
+    zoneInput.value = "";
   }
 
   // El mapa muestra solo la zona elegida en el menú.
   var allZones = null;
   function syncMap() {
     if (!picker || !allZones) return;
-    picker.showZones(allZones.filter(function (z) { return z.code === zoneInput.value; }), true);
+    var chosen = allZones.filter(function (z) { return zoneInput.value !== "" && z.code === zoneInput.value; });
+    picker.showZones(chosen, chosen.length > 0);
   }
 
   zoneInput.addEventListener("change", function () {
     if (zoneInput.value) run(zoneInput.value);
+    else setStatus("loading", "Elige una zona en el menú para ver sus estrategias.");
     syncMap();
   });
 
@@ -232,14 +238,19 @@
     onSelectZone: function () {},
   });
   window.TerraShiftApi.loadZones(cfg).then(function (zones) {
-    if (zones && zones.length) fillZoneMenu(zones);
     allZones = zones;
-    syncMap();
+    if (zones && zones.length) {
+      fillZoneMenu(zones);
+      resultsEl.replaceChildren();
+      setStatus("loading", "Elige una zona en el menú para ver sus estrategias.");
+      syncMap();
+    } else {
+      // Sin servidor: se muestra la zona por defecto con la copia de respaldo.
+      setZone(cfg.defaultZone);
+      run(cfg.defaultZone);
+    }
   });
 
   document.getElementById("repo-link").href = cfg.repoUrl;
   document.getElementById("docs-link").href = cfg.apiBase.replace(/\/+$/, "") + "/api/swagger-ui.html";
-
-  setZone(cfg.defaultZone);
-  run(cfg.defaultZone);
 })();
