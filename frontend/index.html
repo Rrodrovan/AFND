@@ -6,7 +6,7 @@
   <title>TerraShift · Estrategias de rotación para el Corredor Seco</title>
   <meta name="description" content="Comparación de estrategias de rotación de cultivos frente a la sequía en el Corredor Seco de Nicaragua, con datos de la NASA.">
   <link rel="stylesheet" href="./vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="./styles.css?v=20261115c">
+  <link rel="stylesheet" href="./styles.css?v=20261115d">
 </head>
 <body>
   <header class="hero">
@@ -40,6 +40,12 @@
 
     <p id="status" class="status status--loading" role="status" aria-live="polite">Conectando con el servidor…</p>
     <p id="note" class="note" hidden></p>
+
+    <section id="summary" class="summary" aria-labelledby="summary-title" hidden>
+      <h2 id="summary-title">En resumen</h2>
+      <div id="summary-lines"></div>
+      <p class="reading__note">Resumen automático con reglas fijas sobre los datos de esta zona; el detalle está más abajo. No sustituye la asesoría de un técnico agrónomo.</p>
+    </section>
 
     <section id="nasa-panel" class="panel" aria-labelledby="nasa-title" hidden>
       <h2 id="nasa-title">Datos de la NASA en este servidor</h2>
@@ -80,14 +86,14 @@
     </p>
   </footer>
 
-  <script src="./config.js?v=20261115c"></script>
-  <script src="./api.js?v=20261115c"></script>
-  <script src="./charts.js?v=20261115c"></script>
+  <script src="./config.js?v=20261115d"></script>
+  <script src="./api.js?v=20261115d"></script>
+  <script src="./charts.js?v=20261115d"></script>
   <script src="./vendor/leaflet/leaflet.js"></script>
-  <script src="./zonelogic.js?v=20261115c"></script>
-  <script src="./zonepicker.js?v=20261115c"></script>
-  <script src="./reading.js?v=20261115c"></script>
-  <script src="./interpretacion.js?v=20261115c"></script>
-  <script src="./app.js?v=20261115c"></script>
+  <script src="./zonelogic.js?v=20261115d"></script>
+  <script src="./zonepicker.js?v=20261115d"></script>
+  <script src="./reading.js?v=20261115d"></script>
+  <script src="./interpretacion.js?v=20261115d"></script>
+  <script src="./app.js?v=20261115d"></script>
 </body>
 </html>

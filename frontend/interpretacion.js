@@ -374,6 +374,21 @@
     return sections;
   }
 
+  // Resumen breve: una frase por línea (resultados, riesgo y recomendación); gana la primera variante que se cumple.
+  function buildBrief(rules, strategies, months, today) {
+    var facts = buildFacts(strategies, completeMonths(months, today));
+    var lines = [];
+    ((rules && rules.resumen_breve) || []).forEach(function (line) {
+      for (var i = 0; i < (line.variantes || []).length; i++) {
+        var v = line.variantes[i];
+        if (!evalCond(v.cuando, facts)) continue;
+        var text = renderText(v.texto, facts, rules);
+        if (text) { lines.push(text); break; }
+      }
+    });
+    return lines;
+  }
+
   var cache = null;
   function load(url) {
     if (!cache) {
@@ -385,6 +400,6 @@
     return cache;
   }
 
-  root.TerraShiftInterpretation = { completeMonths: completeMonths, build: build, buildFacts: buildFacts, evalCond: evalCond, renderText: renderText, load: load };
+  root.TerraShiftInterpretation = { completeMonths: completeMonths, build: build, buildBrief: buildBrief, buildFacts: buildFacts, evalCond: evalCond, renderText: renderText, load: load };
   if (typeof module !== "undefined" && module.exports) module.exports = root.TerraShiftInterpretation;
 })(typeof window !== "undefined" ? window : this);

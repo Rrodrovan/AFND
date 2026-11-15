@@ -293,12 +293,19 @@
   async function renderInterpretation(strategies, months) {
     var section = document.getElementById("interpretation");
     var body = document.getElementById("interpretation-body");
+    var summary = document.getElementById("summary");
+    var summaryLines = document.getElementById("summary-lines");
     body.replaceChildren();
+    summaryLines.replaceChildren();
     section.hidden = true;
+    summary.hidden = true;
     var I = window.TerraShiftInterpretation;
     if (!I || !strategies || strategies.length === 0) return;
     try {
-      var rules = await I.load("./interpretacion.json?v=20261115c");
+      var rules = await I.load("./interpretacion.json?v=20261115d");
+      var brief = I.buildBrief(rules, strategies, months || []);
+      brief.forEach(function (line) { summaryLines.appendChild(el("p", "summary__line", line)); });
+      summary.hidden = brief.length === 0;
       var sections = I.build(rules, strategies, months || []);
       sections.forEach(function (sec) {
         body.appendChild(el("h3", "interpretation__title", sec.titulo));
@@ -315,6 +322,7 @@
       section.hidden = sections.length === 0;
     } catch (err) {
       section.hidden = true;
+      summary.hidden = true;
     }
   }
 
@@ -331,6 +339,7 @@
     } catch (err) {
       document.getElementById("nasa-panel").hidden = true;
       document.getElementById("interpretation").hidden = true;
+      document.getElementById("summary").hidden = true;
       resultsEl.replaceChildren();
       noteEl.hidden = true;
       setStatus("error", "No se pudieron cargar los datos. Intenta de nuevo en unos minutos.");
@@ -383,6 +392,7 @@
     else {
       setStatus("loading", "Elige una zona en el menú para ver sus estrategias.");
       document.getElementById("interpretation").hidden = true;
+      document.getElementById("summary").hidden = true;
     }
     syncMap();
   });
