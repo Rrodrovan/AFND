@@ -27,6 +27,9 @@ body {
 
 .hero { background: var(--green-900); color: #fff; padding: 2.5rem 0 2rem; }
 .hero h1 { margin: 0.25rem 0 0.5rem; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.02em; }
+.hero__row { display: flex; align-items: center; gap: 1.5rem; }
+.hero__logo { flex: none; width: 112px; height: 112px; border-radius: 50%; }
+.hero__text { min-width: 0; }
 .eyebrow { margin: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: #bfe0cf; }
 .lead { margin: 0; max-width: 62ch; color: #e6f2ec; font-size: 1.05rem; }
 
@@ -176,3 +179,8 @@ body {
 .summary { margin: 1rem 0; padding: 1rem 1.2rem; background: #e9f3ec; border-left: 5px solid var(--green-700); border-radius: 10px; }
 .summary h2 { margin: 0 0 0.4rem; font-size: 1.05rem; color: var(--green-900); }
 .summary__line { margin: 0.35rem 0; font-size: 1.02rem; line-height: 1.5; }
+
+@media (max-width: 720px) {
+  .hero__row { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .hero__logo { width: 88px; height: 88px; }
+}
