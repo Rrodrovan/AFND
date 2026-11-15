@@ -47,7 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Puntos por lado de la rejilla de muestreo en SMAP/MODIS/Landsat (3 = 9 puntos; 1 = solo el centro)",
     )
     ingest.add_argument(
-        "--timeout-min", type=int, default=120,
+        "--timeout-min", type=int, default=360,
         help="Minutos máximos de espera por cada tarea de AppEEARS (por defecto 120)",
     )
 
@@ -58,7 +58,7 @@ def build_parser() -> argparse.ArgumentParser:
     sync.add_argument("--all-zones", action="store_true", help="Todas las zonas aprobadas de la base de datos")
     sync.add_argument("--source", choices=SOURCES, default="all")
     sync.add_argument("--grid", type=int, default=3, help="Puntos por lado de la rejilla de muestreo")
-    sync.add_argument("--timeout-min", type=int, default=120, help="Minutos máximos por tarea de AppEEARS")
+    sync.add_argument("--timeout-min", type=int, default=360, help="Minutos máximos por tarea de AppEEARS")
     sync.add_argument("--dry-run", action="store_true", help="Solo muestra el plan; no descarga ni escribe")
     sync.add_argument("--today", type=date.fromisoformat, help=argparse.SUPPRESS)  # para pruebas
     return parser

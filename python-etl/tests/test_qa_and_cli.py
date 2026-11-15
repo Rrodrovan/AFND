@@ -61,7 +61,7 @@ def test_expand_sources():
 
 def test_cli_defaults():
     args = build_parser().parse_args(["ingest"])
-    assert (args.source, args.grid, args.timeout_min, args.zone) == ("all", 3, 120, "piloto")
+    assert (args.source, args.grid, args.timeout_min, args.zone) == ("all", 3, 360, "piloto")
 
 
 def test_cli_rejects_unknown_source():

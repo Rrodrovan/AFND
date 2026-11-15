@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import csv
 import io
+import logging
 import time
 from datetime import date
 from typing import Any, Callable, Sequence
@@ -18,6 +19,8 @@ from typing import Any, Callable, Sequence
 import requests
 
 from src.config import BBox
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://appeears.earthdatacloud.nasa.gov/api"
 
@@ -163,6 +166,67 @@ class AppeearsClient:
             )
         return response.json()["task_id"]
 
+    @staticmethod
+    def _signature(
+        layers: Sequence[tuple[str, str]], points: Sequence[dict[str, Any]], start: date, end: date
+    ) -> tuple:
+        """Huella de una petición: rango, capas y coordenadas (para reconocer una tarea ya enviada)."""
+        return (
+            start.strftime("%m-%d-%Y"),
+            end.strftime("%m-%d-%Y"),
+            frozenset((str(p), str(l)) for p, l in layers),
+            frozenset((round(float(c["latitude"]), 5), round(float(c["longitude"]), 5)) for c in points),
+        )
+
+    def find_reusable_task(
+        self,
+        name: str,
+        layers: Sequence[tuple[str, str]],
+        points: Sequence[dict[str, Any]],
+        start: date,
+        end: date,
+    ) -> str | None:
+        """Busca una tarea reciente con el mismo nombre base y los mismos parámetros.
+
+        Evita volver a hacer cola en NASA cuando una ejecución anterior se cortó mientras la
+        tarea seguía viva (o ya había terminado). Si algo no se puede leer, devuelve None y el
+        llamador crea una tarea nueva: nunca falla por esta búsqueda.
+        """
+        prefix = name.rsplit("-", 1)[0] + "-"
+        wanted = self._signature(layers, points, start, end)
+        try:
+            response = self._request("GET", "/task")
+            if response.status_code != 200 or not isinstance(response.json(), list):
+                return None
+            candidates = [
+                t for t in response.json()
+                if str(t.get("task_name", "")).startswith(prefix)
+                and t.get("status") in ("pending", "processing", "queued", "done")
+            ]
+            candidates.sort(key=lambda t: str(t.get("created", "")), reverse=True)
+            for task in candidates[:5]:
+                detail = self._request("GET", f"/task/{task['task_id']}")
+                if detail.status_code != 200:
+                    continue
+                params = detail.json().get("params", {})
+                dates = params.get("dates", [])
+                if len(dates) != 1:
+                    continue
+                found = (
+                    dates[0]["startDate"],
+                    dates[0]["endDate"],
+                    frozenset((str(l["product"]), str(l["layer"])) for l in params.get("layers", [])),
+                    frozenset(
+                        (round(float(c["latitude"]), 5), round(float(c["longitude"]), 5))
+                        for c in params.get("coordinates", [])
+                    ),
+                )
+                if found == wanted:
+                    return str(task["task_id"])
+        except (KeyError, TypeError, ValueError, AttributeError, requests.RequestException):
+            return None
+        return None
+
     def wait_for_task(self, task_id: str) -> None:
         """Espera a que la tarea termine. Puede tardar de minutos a horas según el rango de fechas."""
         deadline = self._monotonic() + self.timeout_seconds
@@ -223,7 +287,11 @@ class AppeearsClient:
         start: date,
         end: date,
     ) -> list[dict[str, str]]:
-        task_id = self.submit_point_task(name, layers, points, start, end)
+        task_id = self.find_reusable_task(name, layers, points, start, end)
+        if task_id:
+            logger.info("Reutilizo la tarea de AppEEARS %s (%s)", task_id, name)
+        else:
+            task_id = self.submit_point_task(name, layers, points, start, end)
         self.wait_for_task(task_id)
         return self.download_results(task_id)
 

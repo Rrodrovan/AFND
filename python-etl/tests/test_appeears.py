@@ -74,6 +74,8 @@ def happy_handler():
     def handler(method, url, kwargs):
         if url.endswith("/login"):
             return FakeResponse(200, {"token": "T1"})
+        if url.endswith("/task") and method == "GET":
+            return FakeResponse(200, [])  # no hay tareas previas que reutilizar
         if url.endswith("/task") and method == "POST":
             return FakeResponse(202, {"task_id": "abc", "status": "pending"})
         if "/status/abc" in url:
@@ -108,7 +110,7 @@ def test_full_flow_returns_rows_and_sends_correct_payload():
     }]
     assert state["status_calls"] == 3
 
-    submit = next(c for c in session.calls if c[1].endswith("/task"))
+    submit = next(c for c in session.calls if c[0] == "POST" and c[1].endswith("/task"))
     payload = submit[2]["json"]
     assert payload["task_type"] == "point"
     assert payload["params"]["dates"] == [{"startDate": "01-01-2020", "endDate": "01-31-2020"}]
@@ -209,3 +211,60 @@ def test_rejected_task_shows_server_message():
     client, _ = make_client(handler)
     with pytest.raises(AppeearsError, match="layer no existe"):
         client.submit_point_task("t", [("X.001", "y")], grid_points(BBOX, 1), date(2020, 1, 1), date(2020, 1, 2))
+
+
+# --- reutilización de tareas ya enviadas -----------------------------------------------------
+
+POINTS = [{"id": "p0", "latitude": 13.5, "longitude": -86.6}]
+LAYERS = [("SPL4SMGP.008", "Geophysical_Data_sm_surface")]
+
+
+def _task_detail(start="04-01-2015", end="03-31-2016"):
+    return {
+        "params": {
+            "dates": [{"startDate": start, "endDate": end}],
+            "layers": [{"product": "SPL4SMGP.008", "layer": "Geophysical_Data_sm_surface"}],
+            "coordinates": [{"id": "p0", "latitude": 13.5, "longitude": -86.6, "category": "x"}],
+        }
+    }
+
+
+def _reuse_handler(listing, detail):
+    def handler(method, url, kwargs):
+        if url.endswith("/login"):
+            return FakeResponse(200, {"token": "t"})
+        if method == "GET" and url.endswith("/task"):
+            return FakeResponse(200, listing)
+        if method == "GET" and "/task/" in url:
+            return FakeResponse(200, detail)
+        raise AssertionError(f"petición inesperada {method} {url}")
+    return handler
+
+
+def test_reuses_a_matching_task_instead_of_submitting():
+    listing = [{"task_id": "abc", "task_name": "terrashift-smap-20261114", "status": "done", "created": "2026-11-14"}]
+    client, session = make_client(_reuse_handler(listing, _task_detail()))
+    found = client.find_reusable_task(
+        "terrashift-smap-20261115", LAYERS, POINTS, date(2015, 4, 1), date(2016, 3, 31)
+    )
+    assert found == "abc"
+    assert not any(m == "POST" and u.endswith("/task") for m, u, _ in session.calls)
+
+
+def test_does_not_reuse_a_task_with_a_different_range_or_name_or_status():
+    listing = [
+        {"task_id": "a", "task_name": "terrashift-smap-20261114", "status": "done", "created": "2"},
+        {"task_id": "b", "task_name": "otra-cosa-20261114", "status": "done", "created": "3"},
+        {"task_id": "c", "task_name": "terrashift-smap-20261113", "status": "error", "created": "4"},
+    ]
+    client, _ = make_client(_reuse_handler(listing, _task_detail(end="03-31-2017")))
+    assert client.find_reusable_task(
+        "terrashift-smap-20261115", LAYERS, POINTS, date(2015, 4, 1), date(2016, 3, 31)
+    ) is None
+
+
+def test_unreadable_listing_falls_back_to_none():
+    client, _ = make_client(_reuse_handler({"no": "es lista"}, {}))
+    assert client.find_reusable_task(
+        "terrashift-smap-20261115", LAYERS, POINTS, date(2015, 4, 1), date(2016, 3, 31)
+    ) is None
