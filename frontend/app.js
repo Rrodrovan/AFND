@@ -257,6 +257,53 @@
     section.hidden = false;
   }
 
+  // Barras de rendimiento relativo por cultivo y escenario, visibles sin abrir el desplegable.
+  var RY = "Rendimiento relativo";
+  var SC_SHORT = { normal: "Normal", seco: "Seco", canicula: "Canícula" };
+
+  function yieldMap(item) {
+    var m = {};
+    (item.indicators || []).forEach(function (i) {
+      if (shortName(i.indicator) === RY && i.value !== null && i.value !== undefined && !isNaN(Number(i.value))) {
+        m[i.crop + "|" + i.scenario] = Number(i.value);
+      }
+    });
+    return m;
+  }
+
+  function renderKpis(map, all) {
+    var keys = Object.keys(map);
+    if (!keys.length) return null;
+    var crops = [], seen = {};
+    keys.forEach(function (k) { var c = k.split("|")[0]; if (!seen[c]) { seen[c] = true; crops.push(c); } });
+    var box = el("div", "card__kpis");
+    box.appendChild(el("p", "card__kpis-title", "Rendimiento relativo (%)"));
+    crops.forEach(function (crop) {
+      var group = el("div", "kpi");
+      group.appendChild(el("p", "kpi__crop", crop));
+      Object.keys(SCENARIO_ORDER).forEach(function (sc) {
+        var key = crop + "|" + sc;
+        if (!(key in map)) return;
+        var v = map[key];
+        var vals = all.map(function (m) { return m[key]; }).filter(function (x) { return x !== undefined; });
+        var max = Math.max.apply(null, vals), min = Math.min.apply(null, vals);
+        var best = vals.length > 1 && max - min >= 0.5 && v >= max - 0.05;
+        var row = el("div", "kpi__row" + (best ? " kpi__row--best" : ""));
+        row.appendChild(el("span", "kpi__label", SC_SHORT[sc]));
+        var bar = el("span", "kpi__bar");
+        var fill = el("i");
+        fill.style.setProperty("--w", Math.max(0, Math.min(100, v)) + "%");
+        bar.appendChild(fill);
+        row.appendChild(bar);
+        row.appendChild(el("span", "kpi__val", fmt(v) + " %"));
+        row.appendChild(el("b", "kpi__best", best ? "mejor" : ""));
+        group.appendChild(row);
+      });
+      box.appendChild(group);
+    });
+    return box;
+  }
+
   function render(result) {
     var data = result.data;
     resultsEl.replaceChildren();
@@ -271,15 +318,19 @@
     noteEl.textContent = data.note || "";
     noteEl.hidden = !data.note;
 
-    (data.strategies || []).forEach(function (item) {
+    var yieldMaps = (data.strategies || []).map(yieldMap);
+    (data.strategies || []).forEach(function (item, idx) {
       var s = item.strategy;
       var card = el("article", "card");
+      card.dataset.code = s.code;
       card.appendChild(el("span", "card__code", s.code));
       card.appendChild(el("h2", "card__title", s.name));
       card.appendChild(el("p", "card__focus", s.focus));
+      var kpis = renderKpis(yieldMaps[idx], yieldMaps);
+      if (kpis) card.appendChild(kpis);
       if (item.indicators && item.indicators.length > 0) {
         var details = el("details", "card__details");
-        details.appendChild(el("summary", "", "Ver todos los indicadores de " + s.code));
+        details.appendChild(el("summary", "", "Ver todos los indicadores"));
         details.appendChild(renderIndicators(item.indicators));
         card.appendChild(details);
       } else {
