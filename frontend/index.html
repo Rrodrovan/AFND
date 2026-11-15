@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="./img/apple-touch-icon.png">
   <meta property="og:image" content="./img/icon-512.png">
   <link rel="stylesheet" href="./vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="./styles.css?v=20261115f">
+  <link rel="stylesheet" href="./styles.css?v=20261115g">
 </head>
 <body>
   <header class="hero">
@@ -20,6 +20,12 @@
         <p class="eyebrow">NASA Space Apps Challenge 2026 · Field Shift</p>
         <h1>TerraShift</h1>
         <p class="lead">Compara estrategias de rotación de cultivos frente a la sequía y la degradación del suelo en el Corredor Seco de Nicaragua, usando datos de la NASA.</p>
+        <ul class="chips" aria-label="Estrategias comparadas">
+          <li class="chip chip--e1"><b>E1</b> Tradicional</li>
+          <li class="chip chip--e2"><b>E2</b> Conservación hídrica</li>
+          <li class="chip chip--e3"><b>E3</b> Regeneración de suelos</li>
+        </ul>
+        <p class="sources">Datos: NASA POWER · SMAP · MODIS · Landsat</p>
       </div>
     </div>
   </header>
@@ -30,28 +36,45 @@
       <select id="zone" name="zone"></select>
       <button type="submit">Comparar</button>
     </form>
-
-    <section id="zone-picker" class="panel" aria-labelledby="zone-title" hidden>
-      <h2 id="zone-title">Zonas de estudio</h2>
-      <p class="panel__lead">El rectángulo marrón es la zona elegida en el menú de arriba. Para proponer una nueva, dibuja su caja; el equipo la revisa antes de descargar datos.</p>
-      <div id="zone-map" class="zone-map" role="application" aria-label="Mapa de Nicaragua para elegir una zona"></div>
-      <div class="zone-form">
-        <button type="button" id="zone-draw" aria-pressed="false">Dibujar zona</button>
-        <button type="button" id="zone-clear" class="button--ghost">Borrar</button>
-        <label for="zone-name">Nombre de la zona</label>
-        <input id="zone-name" type="text" maxlength="60" autocomplete="off" placeholder="Ej.: Somoto, Madriz">
-        <button type="button" id="zone-send" disabled>Enviar solicitud</button>
-      </div>
-      <p id="zone-msg" class="zone-msg zone-msg--info" role="status" aria-live="polite"></p>
-    </section>
-
     <p id="status" class="status status--loading" role="status" aria-live="polite">Conectando con el servidor…</p>
     <p id="note" class="note" hidden></p>
+
+    <nav class="nav" aria-label="Secciones de la página">
+      <a href="#summary" data-target="summary">Resumen</a>
+      <a href="#results-block" data-target="results-block">Estrategias</a>
+      <a href="#comparison" data-target="comparison">Comparación</a>
+      <a href="#interpretation" data-target="interpretation">Qué significa</a>
+      <a href="#nasa-panel" data-target="nasa-panel">Datos NASA</a>
+      <a href="#zone-picker" data-target="zone-picker">Zonas</a>
+    </nav>
 
     <section id="summary" class="summary" aria-labelledby="summary-title" hidden>
       <h2 id="summary-title">En resumen</h2>
       <div id="summary-lines"></div>
       <p class="reading__note">Resumen automático con reglas fijas sobre los datos de esta zona; el detalle está más abajo. No sustituye la asesoría de un técnico agrónomo.</p>
+    </section>
+
+    <div class="results-block" id="results-block">
+      <div class="section-head">
+        <p class="kicker">Tres formas de manejar el cultivo</p>
+        <h2>Las estrategias frente a la sequía</h2>
+        <p>Con el mismo clima observado por la NASA. Cada barra es el rendimiento relativo: cuánto del potencial del cultivo se logra.</p>
+      </div>
+      <section id="results" class="grid" aria-label="Estrategias de rotación"></section>
+    </div>
+
+    <section id="comparison" class="panel" aria-labelledby="comparison-title" hidden>
+      <h2 id="comparison-title">Comparación de las tres estrategias</h2>
+      <p class="panel__lead">Mismo clima observado por la NASA para las tres; cambia solo el manejo. En negrita, la mejor de las tres en cada fila.</p>
+      <div class="table-wrap"><table id="comparison-table" class="indicators"></table></div>
+      <p id="comparison-note" class="reading__note"></p>
+    </section>
+
+    <section id="interpretation" class="panel" aria-labelledby="interpretation-title" hidden>
+      <h2 id="interpretation-title">Qué significan estos resultados</h2>
+      <p class="panel__lead">Explicación en lenguaje sencillo de los datos de la NASA y de la comparación de las tres estrategias.</p>
+      <div id="interpretation-body"></div>
+      <p class="reading__note">Interpretación automática con reglas fijas (archivo <code>interpretacion.json</code>) aplicadas a los resultados de esta zona; no usa inteligencia artificial ni inventa datos. Es una estimación general y no sustituye la asesoría de un técnico agrónomo.</p>
     </section>
 
     <section id="nasa-panel" class="panel" aria-labelledby="nasa-title" hidden>
@@ -68,29 +91,33 @@
       </div>
     </section>
 
-    <section id="comparison" class="panel" aria-labelledby="comparison-title" hidden>
-      <h2 id="comparison-title">Comparación de las tres estrategias</h2>
-      <p class="panel__lead">Mismo clima observado por la NASA para las tres; cambia solo el manejo. En negrita, la mejor de las tres en cada fila.</p>
-      <div class="table-wrap"><table id="comparison-table" class="indicators"></table></div>
-      <p id="comparison-note" class="reading__note"></p>
+    <section id="zone-picker" class="panel" aria-labelledby="zone-title" hidden>
+      <h2 id="zone-title">Zonas de estudio</h2>
+      <p class="panel__lead">El rectángulo marrón es la zona elegida en el menú de arriba. Para proponer una nueva, dibuja su caja; el equipo la revisa antes de descargar datos.</p>
+      <div id="zone-map" class="zone-map" role="application" aria-label="Mapa de Nicaragua para elegir una zona"></div>
+      <div class="zone-form">
+        <button type="button" id="zone-draw" aria-pressed="false">Dibujar zona</button>
+        <button type="button" id="zone-clear" class="button--ghost">Borrar</button>
+        <label for="zone-name">Nombre de la zona</label>
+        <input id="zone-name" type="text" maxlength="60" autocomplete="off" placeholder="Ej.: Somoto, Madriz">
+        <button type="button" id="zone-send" disabled>Enviar solicitud</button>
+      </div>
+      <p id="zone-msg" class="zone-msg zone-msg--info" role="status" aria-live="polite"></p>
     </section>
-
-    <section id="interpretation" class="panel" aria-labelledby="interpretation-title" hidden>
-      <h2 id="interpretation-title">Qué significan estos resultados</h2>
-      <p class="panel__lead">Explicación en lenguaje sencillo de los datos de la NASA y de la comparación de las tres estrategias.</p>
-      <div id="interpretation-body"></div>
-      <p class="reading__note">Interpretación automática con reglas fijas (archivo <code>interpretacion.json</code>) aplicadas a los resultados de esta zona; no usa inteligencia artificial ni inventa datos. Es una estimación general y no sustituye la asesoría de un técnico agrónomo.</p>
-    </section>
-
-    <section id="results" class="grid" aria-label="Estrategias de rotación"></section>
   </main>
 
-  <footer class="wrap footer">
-    <p>Equipo Los zzz · sede Managua, Nicaragua. Herramienta de apoyo a la decisión: los resultados son estimaciones con incertidumbre y no sustituyen la asesoría de un técnico agrónomo.</p>
-    <p>
-      <a id="repo-link" href="#">Código en GitHub</a> ·
-      <a id="docs-link" href="#">Documentación de la API</a>
-    </p>
+  <footer class="site-footer">
+    <div class="wrap site-footer__row">
+      <img src="./img/terrashift-logo.png" width="64" height="64" alt="">
+      <div>
+        <p><strong>TerraShift</strong> · Equipo Los zzz · sede Managua, Nicaragua · NASA Space Apps Challenge 2026</p>
+        <p class="site-footer__small">Herramienta de apoyo a la decisión: los resultados son estimaciones con incertidumbre y no sustituyen la asesoría de un técnico agrónomo.</p>
+        <p>
+          <a id="repo-link" href="#">Código en GitHub</a> ·
+          <a id="docs-link" href="#">Documentación de la API</a>
+        </p>
+      </div>
+    </div>
   </footer>
 
   <script src="./config.js?v=20261115d"></script>
@@ -101,7 +128,7 @@
   <script src="./zonepicker.js?v=20261115d"></script>
   <script src="./reading.js?v=20261115d"></script>
   <script src="./interpretacion.js?v=20261115d"></script>
-  <script src="./app.js?v=20261115f"></script>
-  <script src="./motion.js?v=20261115f"></script>
+  <script src="./app.js?v=20261115g"></script>
+  <script src="./motion.js?v=20261115g"></script>
 </body>
 </html>
