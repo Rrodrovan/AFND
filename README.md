@@ -491,9 +491,9 @@ Esta sección separa lo que el proyecto **sí hace** de lo que **no hace**, y pa
 | Integrante | Rol |
 |---|---|
 | `Rodrigo Ivan Ramírez Dávalos` | `Desarrollador` |
-| `[COMPLETAR]` | `[COMPLETAR]` |
-| `[COMPLETAR]` | `[COMPLETAR]` |
-| `[COMPLETAR]` | `[COMPLETAR]` |
+| `Claudio Antonio De La Rocha Acevedo` | `Marketing` |
+| `Teresa Elizabeth Vallecillo Herrera` | `Comunicadora` |
+| `Moises Abraham Valle Alonso` | `Product Manager` |
 
 **Licencia:** `[Espacio para las licencias]`
 
