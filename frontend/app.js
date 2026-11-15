@@ -244,6 +244,35 @@
     });
   }
 
+  // Interpretación para el agricultor: reglas de interpretacion.json sobre los resultados y los datos NASA.
+  async function renderInterpretation(strategies, months) {
+    var section = document.getElementById("interpretation");
+    var body = document.getElementById("interpretation-body");
+    body.replaceChildren();
+    section.hidden = true;
+    var I = window.TerraShiftInterpretation;
+    if (!I || !strategies || strategies.length === 0) return;
+    try {
+      var rules = await I.load("./interpretacion.json?v=20261115c");
+      var sections = I.build(rules, strategies, months || []);
+      sections.forEach(function (sec) {
+        body.appendChild(el("h3", "interpretation__title", sec.titulo));
+        var list = el("ul", "interpretation__list");
+        sec.items.forEach(function (item) {
+          var li = el("li", "", item.texto);
+          if (item.criterio) {
+            li.appendChild(el("small", "interpretation__why", "Criterio: " + item.criterio));
+          }
+          list.appendChild(li);
+        });
+        body.appendChild(list);
+      });
+      section.hidden = sections.length === 0;
+    } catch (err) {
+      section.hidden = true;
+    }
+  }
+
   async function run(zone) {
     buttonEl.disabled = true;
     setStatus("loading", "Conectando con el servidor…");
@@ -251,9 +280,12 @@
       var result = await window.TerraShiftApi.loadComparison(cfg, zone);
       render(result);
       // Los datos de la NASA solo se piden si el servidor respondió; con la copia de respaldo no hay panel.
-      renderNasaPanel(result.source === "live" ? await window.TerraShiftApi.loadObservations(cfg, zone, 24) : null);
+      var obs = result.source === "live" ? await window.TerraShiftApi.loadObservations(cfg, zone, 24) : null;
+      renderNasaPanel(obs);
+      renderInterpretation(result.data.strategies, obs && obs.monthly && obs.monthly.months);
     } catch (err) {
       document.getElementById("nasa-panel").hidden = true;
+      document.getElementById("interpretation").hidden = true;
       resultsEl.replaceChildren();
       noteEl.hidden = true;
       setStatus("error", "No se pudieron cargar los datos. Intenta de nuevo en unos minutos.");
@@ -303,7 +335,10 @@
 
   zoneInput.addEventListener("change", function () {
     if (zoneInput.value) run(zoneInput.value);
-    else setStatus("loading", "Elige una zona en el menú para ver sus estrategias.");
+    else {
+      setStatus("loading", "Elige una zona en el menú para ver sus estrategias.");
+      document.getElementById("interpretation").hidden = true;
+    }
     syncMap();
   });
 

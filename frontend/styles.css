@@ -139,3 +139,8 @@ body {
 .reading__note { margin: 0.75rem 0 0; font-size: 0.85rem; color: #5a5648; }
 
 .indicators td.best { font-weight: 700; color: var(--green-900); background: #e9f3ec; }
+
+.interpretation__title { margin: 1.1rem 0 0.35rem; font-size: 1.02rem; color: var(--green-900); }
+.interpretation__list { margin: 0; padding-left: 1.2rem; }
+.interpretation__list li { margin: 0.5rem 0; line-height: 1.55; }
+.interpretation__why { display: block; margin-top: 0.15rem; font-size: 0.8rem; color: #6a6657; }
