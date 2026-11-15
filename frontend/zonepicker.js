@@ -121,10 +121,10 @@
     function showZones(zones) {
       approvedLayer.clearLayers();
       (zones || []).forEach(function (z) {
-        var rect = L.rectangle([[z.minLat, z.minLon], [z.maxLat, z.maxLon]], { color: "#9a5b00", weight: 2, fillOpacity: 0.12 });
+        var rect = L.rectangle([[z.minLat, z.minLon], [z.maxLat, z.maxLon]], { color: "#9a5b00", weight: 3, fillOpacity: 0.3 });
         var label = document.createElement("span");
         label.textContent = z.name + " (clic para ver estrategias)";
-        rect.bindTooltip(label, { sticky: true });
+        rect.bindTooltip(label, (zones || []).length === 1 ? { permanent: true, direction: "right", offset: [12, 0] } : { sticky: true });
         rect.on("click", function (event) {
           if (drawing) return; // mientras se dibuja, el clic es de la esquina
           L.DomEvent.stopPropagation(event);
