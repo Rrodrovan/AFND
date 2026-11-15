@@ -209,8 +209,16 @@
     setZone(current);
   }
 
+  // El mapa muestra solo la zona elegida en el menú.
+  var allZones = null;
+  function syncMap() {
+    if (!picker || !allZones) return;
+    picker.showZones(allZones.filter(function (z) { return z.code === zoneInput.value; }), true);
+  }
+
   zoneInput.addEventListener("change", function () {
     if (zoneInput.value) run(zoneInput.value);
+    syncMap();
   });
 
   form.addEventListener("submit", function (event) {
@@ -221,15 +229,12 @@
 
   // Mapa de zonas: si Leaflet no cargó (p. ej. sin red), la página sigue funcionando sin él.
   var picker = window.TerraShiftZonePicker && window.TerraShiftZonePicker.init(cfg, {
-    onSelectZone: function (code) {
-      setZone(code);
-      run(code);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    },
+    onSelectZone: function () {},
   });
   window.TerraShiftApi.loadZones(cfg).then(function (zones) {
     if (zones && zones.length) fillZoneMenu(zones);
-    if (picker) picker.showZones(zones);
+    allZones = zones;
+    syncMap();
   });
 
   document.getElementById("repo-link").href = cfg.repoUrl;

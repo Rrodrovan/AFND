@@ -118,20 +118,20 @@
       }
     });
 
-    function showZones(zones) {
+    // Dibuja solo las zonas que se le pasan (la elegida en el menú) y, si se pide, acerca el mapa a ella.
+    function showZones(zones, fit) {
       approvedLayer.clearLayers();
+      var bounds = null;
       (zones || []).forEach(function (z) {
-        var rect = L.rectangle([[z.minLat, z.minLon], [z.maxLat, z.maxLon]], { color: "#9a5b00", weight: 2, fillOpacity: 0.12 });
+        var corners = [[z.minLat, z.minLon], [z.maxLat, z.maxLon]];
+        var rect = L.rectangle(corners, { color: "#9a5b00", weight: 3, fillOpacity: 0.3 });
         var label = document.createElement("span");
-        label.textContent = z.name + " (clic para ver estrategias)";
-        rect.bindTooltip(label, { sticky: true });
-        rect.on("click", function (event) {
-          if (drawing) return; // mientras se dibuja, el clic es de la esquina
-          L.DomEvent.stopPropagation(event);
-          hooks.onSelectZone(z.code);
-        });
+        label.textContent = z.name || z.code;
+        rect.bindTooltip(label, { permanent: true, direction: "right", offset: [12, 0] });
         rect.addTo(approvedLayer);
+        bounds = bounds ? bounds.extend(rect.getBounds()) : rect.getBounds();
       });
+      if (fit && bounds) map.fitBounds(bounds, { padding: [60, 60], maxZoom: 11 });
     }
 
     clearDrawing();
