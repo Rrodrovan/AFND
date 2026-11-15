@@ -182,6 +182,37 @@
     }
   }
 
+  // Menú de zonas: solo las aprobadas. Si el servidor no responde, queda la zona por defecto.
+  function setZone(code) {
+    var found = false;
+    for (var i = 0; i < zoneInput.options.length; i++) {
+      if (zoneInput.options[i].value === code) found = true;
+    }
+    if (!found) {
+      var extra = document.createElement("option");
+      extra.value = code;
+      extra.textContent = code;
+      zoneInput.appendChild(extra);
+    }
+    zoneInput.value = code;
+  }
+
+  function fillZoneMenu(zones) {
+    var current = zoneInput.value || cfg.defaultZone;
+    zoneInput.textContent = "";
+    (zones || []).forEach(function (z) {
+      var option = document.createElement("option");
+      option.value = z.code;
+      option.textContent = z.name || z.code;
+      zoneInput.appendChild(option);
+    });
+    setZone(current);
+  }
+
+  zoneInput.addEventListener("change", function () {
+    if (zoneInput.value) run(zoneInput.value);
+  });
+
   form.addEventListener("submit", function (event) {
     event.preventDefault();
     var zone = zoneInput.value.trim();
@@ -191,18 +222,19 @@
   // Mapa de zonas: si Leaflet no cargó (p. ej. sin red), la página sigue funcionando sin él.
   var picker = window.TerraShiftZonePicker && window.TerraShiftZonePicker.init(cfg, {
     onSelectZone: function (code) {
-      zoneInput.value = code;
+      setZone(code);
       run(code);
       window.scrollTo({ top: 0, behavior: "smooth" });
     },
   });
-  if (picker) {
-    window.TerraShiftApi.loadZones(cfg).then(function (zones) { picker.showZones(zones); });
-  }
+  window.TerraShiftApi.loadZones(cfg).then(function (zones) {
+    if (zones && zones.length) fillZoneMenu(zones);
+    if (picker) picker.showZones(zones);
+  });
 
   document.getElementById("repo-link").href = cfg.repoUrl;
   document.getElementById("docs-link").href = cfg.apiBase.replace(/\/+$/, "") + "/api/swagger-ui.html";
 
-  zoneInput.value = cfg.defaultZone;
+  setZone(cfg.defaultZone);
   run(cfg.defaultZone);
 })();
