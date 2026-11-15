@@ -24,7 +24,7 @@ public class StrategyRepository {
 
     public boolean zoneExists(String zoneCode) {
         Integer count = jdbc.queryForObject(
-                "SELECT count(*) FROM zone WHERE code = ?", Integer.class, zoneCode);
+                "SELECT count(*) FROM zone WHERE code = ? AND status = 'approved'", Integer.class, zoneCode);
         return count != null && count > 0;
     }
 
