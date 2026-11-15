@@ -150,9 +150,72 @@
     return table;
   }
 
+  // Tabla lado a lado: una fila por cultivo, escenario e indicador; una columna por estrategia.
+  var SCENARIO_ORDER = { normal: 0, seco: 1, canicula: 2 };
+  function higherIsBetter(name) { return /^(Rendimiento|Lluvia efectiva)/.test(name); }
+
+  function renderComparison(strategies) {
+    var section = document.getElementById("comparison");
+    var table = document.getElementById("comparison-table");
+    table.replaceChildren();
+    var codes = strategies.map(function (item) { return item.strategy.code; });
+    var rows = {};
+    var order = [];
+    strategies.forEach(function (item) {
+      (item.indicators || []).forEach(function (ind) {
+        var key = [ind.crop, ind.scenario, ind.indicator].join("|");
+        if (!rows[key]) { rows[key] = { ind: ind, values: {} }; order.push(key); }
+        rows[key].values[item.strategy.code] = ind;
+      });
+    });
+    if (order.length === 0) { section.hidden = true; return; }
+
+    order.sort(function (x, y) {
+      var a = rows[x].ind, b = rows[y].ind;
+      if (a.crop !== b.crop) return a.crop < b.crop ? -1 : 1;
+      var sa = SCENARIO_ORDER[a.scenario], sb = SCENARIO_ORDER[b.scenario];
+      return sa !== sb ? sa - sb : order.indexOf(x) - order.indexOf(y);
+    });
+
+    var head = table.createTHead().insertRow();
+    ["Cultivo", "Escenario", "Indicador"].concat(codes).forEach(function (h) {
+      var th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = h;
+      head.appendChild(th);
+    });
+    var body = table.createTBody();
+    order.forEach(function (key) {
+      var r = rows[key];
+      var row = body.insertRow();
+      [r.ind.crop, SCENARIOS[r.ind.scenario] || r.ind.scenario, r.ind.indicator].forEach(function (text) {
+        row.insertCell().textContent = text;
+      });
+      var best = null;
+      codes.forEach(function (c) {
+        var v = r.values[c] && r.values[c].value;
+        if (typeof v !== "number") return;
+        if (best === null || (higherIsBetter(r.ind.indicator) ? v > best : v < best)) best = v;
+      });
+      var tied = codes.filter(function (c) { return r.values[c] && r.values[c].value === best; }).length;
+      codes.forEach(function (c) {
+        var cell = row.insertCell();
+        var ind = r.values[c];
+        cell.textContent = ind ? fmtValue(ind) : "—";
+        if (ind && ind.value === best && tied < codes.length) cell.className = "best";
+      });
+    });
+    document.getElementById("comparison-note").textContent =
+      "Estimación con la lluvia y la temperatura observadas por NASA POWER y un balance hídrico simple del suelo (FAO-56 y FAO-33). " +
+      "Año seco: los 3 años con menos lluvia en el ciclo; canícula: los 3 años con menos lluvia en julio-agosto; año normal: los años intermedios. " +
+      "Cada valor es la media y el rango [mín – máx] de esos años. Los efectos de cada manejo son supuestos del modelo, no mediciones de campo.";
+    section.hidden = false;
+  }
+
   function render(result) {
     var data = result.data;
     resultsEl.replaceChildren();
+    renderComparison(data.strategies || []);
 
     if (result.source === "live") {
       setStatus("live", "Datos en vivo desde el servidor");
@@ -169,7 +232,14 @@
       card.appendChild(el("span", "card__code", s.code));
       card.appendChild(el("h2", "card__title", s.name));
       card.appendChild(el("p", "card__focus", s.focus));
-      card.appendChild(renderIndicators(item.indicators));
+      if (item.indicators && item.indicators.length > 0) {
+        var details = el("details", "card__details");
+        details.appendChild(el("summary", "", "Ver todos los indicadores de " + s.code));
+        details.appendChild(renderIndicators(item.indicators));
+        card.appendChild(details);
+      } else {
+        card.appendChild(renderIndicators(item.indicators));
+      }
       resultsEl.appendChild(card);
     });
   }
