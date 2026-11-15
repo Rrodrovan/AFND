@@ -49,6 +49,17 @@ def load_db_config() -> DbConfig:
     )
 
 
+def load_earthdata_credentials() -> tuple[str, str]:
+    user = os.environ.get("EARTHDATA_USERNAME", "").strip()
+    password = os.environ.get("EARTHDATA_PASSWORD", "")
+    if not user or not password:
+        raise RuntimeError(
+            "Faltan EARTHDATA_USERNAME y EARTHDATA_PASSWORD. "
+            "Crea una cuenta gratuita en https://urs.earthdata.nasa.gov y defínelas en el entorno."
+        )
+    return user, password
+
+
 def load_pilot_bbox() -> BBox:
     raw = os.environ.get("PILOT_ZONE_BBOX")
     if not raw:
