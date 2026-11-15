@@ -34,6 +34,57 @@ def ensure_zone(conn: psycopg.Connection, code: str, name: str, bbox: BBox) -> i
         return cur.fetchone()[0]
 
 
+SOIL_MOISTURE_SOURCE = "SMAP SPL4SMGP.008"
+
+
+def upsert_soil_moisture(
+    conn: psycopg.Connection, zone_id: int, rows: Iterable[dict[str, Any]]
+) -> int:
+    """Inserta o actualiza filas de `soil_moisture`. Devuelve cuántas filas se procesaron."""
+    payload = [
+        (zone_id, r["date"], r.get("surface_m3m3"), r.get("rootzone_m3m3"), SOIL_MOISTURE_SOURCE)
+        for r in rows
+    ]
+    if not payload:
+        return 0
+    with conn.cursor() as cur:
+        cur.executemany(
+            """
+            INSERT INTO soil_moisture (zone_id, date, surface_m3m3, rootzone_m3m3, source)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (zone_id, date) DO UPDATE SET
+                surface_m3m3 = EXCLUDED.surface_m3m3,
+                rootzone_m3m3 = EXCLUDED.rootzone_m3m3,
+                source = EXCLUDED.source
+            """,
+            payload,
+        )
+    conn.commit()
+    return len(payload)
+
+
+def upsert_vegetation_index(
+    conn: psycopg.Connection, zone_id: int, rows: Iterable[dict[str, Any]]
+) -> int:
+    """Inserta o actualiza filas de `vegetation_index` (source: 'MODIS' o 'LANDSAT')."""
+    payload = [(zone_id, r["date"], r["source"], r.get("ndvi"), r.get("evi")) for r in rows]
+    if not payload:
+        return 0
+    with conn.cursor() as cur:
+        cur.executemany(
+            """
+            INSERT INTO vegetation_index (zone_id, date, source, ndvi, evi)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (zone_id, date, source) DO UPDATE SET
+                ndvi = EXCLUDED.ndvi,
+                evi = EXCLUDED.evi
+            """,
+            payload,
+        )
+    conn.commit()
+    return len(payload)
+
+
 def upsert_climate_daily(
     conn: psycopg.Connection, zone_id: int, rows: Iterable[dict[str, Any]]
 ) -> int:
