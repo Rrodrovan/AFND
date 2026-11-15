@@ -6,6 +6,7 @@ Ejemplos:
     python -m src.cli ingest --zone piloto --source smap --grid 3 --timeout-min 180
     python -m src.cli sync --zone piloto            # solo lo nuevo desde la última fecha cargada
     python -m src.cli sync --zone piloto --dry-run  # muestra qué pediría, sin descargar ni escribir
+    python -m src.cli sync --all-zones              # todas las zonas aprobadas (lo que corre a diario)
 
 Fuentes: power (NASA POWER), smap, modis, landsat, landsat-modis (modis + landsat) y all (todas).
 SMAP, MODIS y Landsat usan AppEEARS y requieren EARTHDATA_USERNAME / EARTHDATA_PASSWORD.
@@ -14,6 +15,7 @@ SMAP, MODIS y Landsat usan AppEEARS y requieren EARTHDATA_USERNAME / EARTHDATA_P
 from __future__ import annotations
 
 import argparse
+import os
 from datetime import date
 from typing import Sequence
 
@@ -53,6 +55,7 @@ def build_parser() -> argparse.ArgumentParser:
         "sync", help="Trae solo los datos nuevos de cada fuente (pensado para correr a diario)"
     )
     sync.add_argument("--zone", default="piloto", help="Código de la zona (por defecto: piloto)")
+    sync.add_argument("--all-zones", action="store_true", help="Todas las zonas aprobadas de la base de datos")
     sync.add_argument("--source", choices=SOURCES, default="all")
     sync.add_argument("--grid", type=int, default=3, help="Puntos por lado de la rejilla de muestreo")
     sync.add_argument("--timeout-min", type=int, default=120, help="Minutos máximos por tarea de AppEEARS")
@@ -113,15 +116,90 @@ def run_ingest(args: argparse.Namespace) -> int:
     return 0
 
 
-def run_sync_command(args: argparse.Namespace) -> int:
+def build_specs(conn_holder, bbox, args, appeears_client):
+    """Fuentes de una zona: cómo descargar, cargar y consultar cada una (`conn_holder()` da la conexión)."""
     from src import sync
-    from src.ingest import appeears, landsat_modis, power, smap
+    from src.ingest import landsat_modis, power, smap
     from src.load import postgres
 
-    bbox = load_pilot_bbox()
+    lat, lon = bbox_centroid(bbox)
+    return {
+        "power": sync.SourceSpec(
+            sync.POLICIES["power"],
+            lambda s, e: power.fetch_daily(lat, lon, s, e),
+            lambda zid, rows: postgres.upsert_climate_daily(conn_holder(), zid, rows),
+            lambda zid: postgres.latest_date(conn_holder(), zid, "power"),
+        ),
+        "smap": sync.SourceSpec(
+            sync.POLICIES["smap"],
+            lambda s, e: smap.fetch_soil_moisture(appeears_client(), bbox, s, e, args.grid),
+            lambda zid, rows: postgres.upsert_soil_moisture(conn_holder(), zid, rows),
+            lambda zid: postgres.latest_date(conn_holder(), zid, "smap"),
+        ),
+        "modis": sync.SourceSpec(
+            sync.POLICIES["modis"],
+            lambda s, e: landsat_modis.fetch_modis(appeears_client(), bbox, s, e, args.grid),
+            lambda zid, rows: postgres.upsert_vegetation_index(conn_holder(), zid, rows),
+            lambda zid: postgres.latest_date(conn_holder(), zid, "modis"),
+        ),
+        "landsat": sync.SourceSpec(
+            sync.POLICIES["landsat"],
+            lambda s, e: landsat_modis.fetch_landsat(appeears_client(), bbox, s, e, args.grid),
+            lambda zid, rows: postgres.upsert_vegetation_index(conn_holder(), zid, rows),
+            lambda zid: postgres.latest_date(conn_holder(), zid, "landsat"),
+        ),
+    }
+
+
+def resolve_sync_zones(conn, args, env_bbox: "BBox | None") -> list[tuple[int | None, str, "BBox"]]:
+    """Zonas a sincronizar: [(id | None, código, caja)]. id None = zona aún no creada (solo en --dry-run).
+
+    --zone CODE   una zona; si PILOT_ZONE_BBOX está definida manda sobre la caja guardada (compatibilidad).
+    --all-zones   todas las zonas aprobadas de la base. Si PILOT_ZONE_BBOX está definida, la zona
+                  'piloto' se crea o actualiza primero desde ahí.
+    """
+    from src.load import postgres
+
+    def upsert_from_env(code: str) -> tuple[int | None, str, "BBox"]:
+        stored = postgres.zone_bbox(conn, code)
+        if stored is not None and tuple(stored) != tuple(env_bbox):
+            print(
+                f"[{code}] AVISO: la caja de la zona cambió respecto a la guardada {tuple(stored)}. "
+                "Los datos ya cargados corresponden a la caja anterior; bórralos si quieres series coherentes."
+            )
+        if args.dry_run:
+            return postgres.find_zone_id(conn, code), code, env_bbox
+        zone_id = postgres.ensure_zone(conn, code, code.capitalize(), env_bbox)
+        conn.commit()
+        return zone_id, code, env_bbox
+
+    if not args.all_zones:
+        if env_bbox is not None:
+            return [upsert_from_env(args.zone)]
+        stored = postgres.zone_bbox(conn, args.zone)
+        if stored is None:
+            raise RuntimeError(
+                f"La zona '{args.zone}' no existe en la base. Define PILOT_ZONE_BBOX o apruébala desde la página."
+            )
+        return [(postgres.find_zone_id(conn, args.zone), args.zone, stored)]
+
+    zones = []
+    if env_bbox is not None:
+        zones.append(upsert_from_env("piloto"))
+    seen = {code for _, code, _ in zones}
+    zones += [z for z in postgres.list_approved_zones(conn) if z[1] not in seen]
+    return zones
+
+
+def run_sync_command(args: argparse.Namespace) -> int:
+    from src import sync
+    from src.ingest import appeears, smap
+    from src.load import postgres
+
+    raw_bbox = os.environ.get("PILOT_ZONE_BBOX")
+    env_bbox = load_pilot_bbox() if raw_bbox else None
     default_start, _ = load_date_range()
     today = args.today or date.today()
-    lat, lon = bbox_centroid(bbox)
 
     client = None
 
@@ -132,46 +210,21 @@ def run_sync_command(args: argparse.Namespace) -> int:
             client = appeears.AppeearsClient(user, password, timeout_seconds=args.timeout_min * 60)
         return client
 
-    specs = {
-        "power": sync.SourceSpec(
-            sync.POLICIES["power"],
-            lambda s, e: power.fetch_daily(lat, lon, s, e),
-            lambda zid, rows: postgres.upsert_climate_daily(conn, zid, rows),
-            lambda zid: postgres.latest_date(conn, zid, "power"),
-        ),
-        "smap": sync.SourceSpec(
-            sync.POLICIES["smap"],
-            lambda s, e: smap.fetch_soil_moisture(appeears_client(), bbox, s, e, args.grid),
-            lambda zid, rows: postgres.upsert_soil_moisture(conn, zid, rows),
-            lambda zid: postgres.latest_date(conn, zid, "smap"),
-        ),
-        "modis": sync.SourceSpec(
-            sync.POLICIES["modis"],
-            lambda s, e: landsat_modis.fetch_modis(appeears_client(), bbox, s, e, args.grid),
-            lambda zid, rows: postgres.upsert_vegetation_index(conn, zid, rows),
-            lambda zid: postgres.latest_date(conn, zid, "modis"),
-        ),
-        "landsat": sync.SourceSpec(
-            sync.POLICIES["landsat"],
-            lambda s, e: landsat_modis.fetch_landsat(appeears_client(), bbox, s, e, args.grid),
-            lambda zid, rows: postgres.upsert_vegetation_index(conn, zid, rows),
-            lambda zid: postgres.latest_date(conn, zid, "landsat"),
-        ),
-    }
-    chosen = [specs[key] for key in sync.SYNC_ORDER if key in expand_sources(args.source)]
-
+    failed: list[str] = []
     with postgres.connect() as conn:
-        if args.dry_run:
-            zone_id = postgres.find_zone_id(conn, args.zone)
-        else:
-            zone_id = postgres.ensure_zone(conn, args.zone, args.zone.capitalize(), bbox)
-            conn.commit()
-        results = sync.run_sync(conn, zone_id, chosen, today, default_start, dry_run=args.dry_run)
+        zones = resolve_sync_zones(conn, args, env_bbox)
+        if not zones:
+            print("No hay zonas aprobadas para sincronizar.")
+        for zone_id, code, bbox in zones:
+            print(f"=== Zona '{code}' caja {tuple(bbox)} ===")
+            specs = build_specs(lambda: conn, bbox, args, appeears_client)
+            chosen = [specs[key] for key in sync.SYNC_ORDER if key in expand_sources(args.source)]
+            results = sync.run_sync(conn, zone_id, chosen, today, default_start, dry_run=args.dry_run)
+            failed += [f"{code}/{r.source}" for r in results if r.status == "error"]
 
-        if not args.dry_run and any(spec.policy.key == "smap" for spec in chosen):
+        if not args.dry_run and args.source in ("smap", "all"):
             _warn_if_newer_smap(appeears, smap)
 
-    failed = [r.source for r in results if r.status == "error"]
     if failed:
         print(f"Fuentes con error: {', '.join(failed)}")
         return 1

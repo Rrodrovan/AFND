@@ -124,3 +124,80 @@ def test_upsert_refreshes_updated_at(conn):
         cur.execute("SELECT rootzone_m3m3, now() - updated_at < interval '1 minute' FROM soil_moisture")
         value, fresh = cur.fetchone()
     assert value == pytest.approx(0.22) and fresh
+
+
+# -- zonas propuestas y sincronización de varias zonas ------------------------------------------
+
+
+def insert_zone(conn, code, status, bbox):
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO zone (code, name, geom, status, min_lon, min_lat, max_lon, max_lat) "
+            "VALUES (%s, %s, 'env', %s, %s, %s, %s, %s) RETURNING id",
+            (code, code, status, *bbox),
+        )
+        zone_id = cur.fetchone()[0]
+    conn.commit()
+    return zone_id
+
+
+def test_only_approved_zones_with_bbox_are_listed(conn):
+    insert_zone(conn, "aprobada", "approved", BBOX)
+    insert_zone(conn, "pendiente", "pending", BBOX)
+    insert_zone(conn, "rechazada", "rejected", BBOX)
+    zones = postgres.list_approved_zones(conn)
+    assert [z[1] for z in zones] == ["aprobada"]
+    assert zones[0][2] == BBOX
+
+
+def test_zone_status_and_bbox_constraints(conn):
+    with pytest.raises(psycopg.errors.CheckViolation):
+        insert_zone(conn, "mala", "otro", BBOX)
+    conn.rollback()
+    with pytest.raises(psycopg.errors.CheckViolation):
+        insert_zone(conn, "invertida", "pending", (-86.5, 13.6, -86.7, 13.4))
+    conn.rollback()
+
+
+def test_ensure_zone_stores_bbox_columns_and_stays_approved(conn):
+    postgres.ensure_zone(conn, "piloto", "Piloto", BBOX)
+    conn.commit()
+    assert postgres.zone_bbox(conn, "piloto") == BBOX
+    assert [z[1] for z in postgres.list_approved_zones(conn)] == ["piloto"]
+
+
+def test_resolve_sync_zones_all_zones_merges_env_piloto_and_database(conn, capsys):
+    import argparse
+    from src import cli
+
+    insert_zone(conn, "otra", "approved", (-86.3, 13.1, -86.1, 13.3))
+    insert_zone(conn, "espera", "pending", BBOX)
+    args = argparse.Namespace(all_zones=True, zone="piloto", dry_run=False)
+
+    zones = cli.resolve_sync_zones(conn, args, BBOX)
+    assert [z[1] for z in zones] == ["piloto", "otra"]
+
+    # sin PILOT_ZONE_BBOX: solo lo que hay aprobado en la base
+    zones = cli.resolve_sync_zones(conn, args, None)
+    assert sorted(z[1] for z in zones) == ["otra", "piloto"]
+
+
+def test_changed_bbox_warns_that_loaded_data_belongs_to_the_old_box(conn, capsys):
+    import argparse
+    from src import cli
+
+    postgres.ensure_zone(conn, "piloto", "Piloto", BBOX)
+    conn.commit()
+    args = argparse.Namespace(all_zones=False, zone="piloto", dry_run=False)
+    cli.resolve_sync_zones(conn, args, (-86.0, 13.0, -85.8, 13.2))
+    assert "AVISO" in capsys.readouterr().out
+    assert postgres.zone_bbox(conn, "piloto") == (-86.0, 13.0, -85.8, 13.2)
+
+
+def test_unknown_zone_without_env_bbox_is_an_error(conn):
+    import argparse
+    from src import cli
+
+    args = argparse.Namespace(all_zones=False, zone="nada", dry_run=False)
+    with pytest.raises(RuntimeError, match="no existe"):
+        cli.resolve_sync_zones(conn, args, None)

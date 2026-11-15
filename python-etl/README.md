@@ -57,7 +57,13 @@ cargas son idempotentes.
 python -m src.cli sync --zone piloto            # lo nuevo de cada fuente
 python -m src.cli sync --zone piloto --dry-run  # solo muestra qué pediría (no descarga ni escribe)
 python -m src.cli sync --zone piloto --source smap
+python -m src.cli sync --all-zones              # todas las zonas aprobadas (es lo que corre a diario)
 ```
+
+Con `--all-zones` se sincronizan todas las zonas con estado `approved` de la tabla `zone`, leyendo su caja de la base
+(las dibujadas en el mapa de la página y aprobadas por el equipo). Si `PILOT_ZONE_BBOX` está definida, la zona `piloto`
+se crea o actualiza primero desde ahí. **Si cambias esa caja, los datos ya cargados siguen siendo los de la caja anterior**
+(el comando lo avisa); bórralos de `climate_daily`, `soil_moisture` y `vegetation_index` si quieres series coherentes.
 
 Para cada fuente mira la última fecha cargada en la base y pide desde ahí hasta `hoy − latencia`
 (la NASA publica con retraso). La primera vez, con la base vacía, descarga el histórico desde `ETL_START_DATE`

@@ -29,7 +29,7 @@ python3 -m venv "$REPO/python-etl/.venv"
 "$REPO/python-etl/.venv/bin/pip" install --quiet --upgrade pip
 "$REPO/python-etl/.venv/bin/pip" install --quiet "$REPO/python-etl"
 
-echo "== 2/5 Tablas de seguimiento (database/init/03_ingest_tracking.sql) =="
+echo "== 2/5 Tablas de seguimiento y de zonas (database/init/03 y 04) =="
 if [ ! -f "$ENV_FILE" ]; then
     echo "Voy a crear $ENV_FILE (solo root puede leerlo). Los datos que escribas no se muestran."
     read -r  -p "Base de datos [terrashift_db]: " DB_NAME;  DB_NAME=${DB_NAME:-terrashift_db}
@@ -59,7 +59,9 @@ else
 fi
 
 # Aplica el SQL de seguimiento con las credenciales del mismo archivo (la contrasena no pasa por la linea de comandos).
-sudo bash -c "set -a; . '$ENV_FILE'; set +a; PGPASSWORD=\"\$POSTGRES_PASSWORD\" psql -v ON_ERROR_STOP=1 -q -h \"\$POSTGRES_HOST\" -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -f '$REPO/database/init/03_ingest_tracking.sql'"
+for sql in 03_ingest_tracking.sql 04_zone_requests.sql; do
+    sudo bash -c "set -a; . '$ENV_FILE'; set +a; PGPASSWORD=\"\$POSTGRES_PASSWORD\" psql -v ON_ERROR_STOP=1 -q -h \"\$POSTGRES_HOST\" -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -f '$REPO/database/init/$sql'"
+done
 
 echo "== 3/5 Servicio y temporizador =="
 for unit in terrashift-sync.service terrashift-sync.timer; do
@@ -69,7 +71,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now terrashift-sync.timer
 
 echo "== 4/5 Plan de la proxima sincronizacion (no descarga nada) =="
-sudo bash -c "set -a; . '$ENV_FILE'; set +a; cd '$REPO/python-etl' && PYTHONDONTWRITEBYTECODE=1 '$REPO/python-etl/.venv/bin/python' -m src.cli sync --zone piloto --dry-run"
+sudo bash -c "set -a; . '$ENV_FILE'; set +a; cd '$REPO/python-etl' && PYTHONDONTWRITEBYTECODE=1 '$REPO/python-etl/.venv/bin/python' -m src.cli sync --all-zones --dry-run"
 
 echo "== 5/5 Listo =="
 systemctl list-timers terrashift-sync.timer --no-pager || true
