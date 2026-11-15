@@ -1,5 +1,7 @@
 # Metodología de análogos regionales
 
+> **Estado:** este documento es el diseño del método. La investigación de análogos **no se realizó** durante el hackathon, por lo que los campos `[COMPLETAR]` siguen pendientes y el MVP no calcula resultados por estrategia. Lo que sí funciona hoy son las series observadas de la NASA para la zona piloto (ver README, «Estado actual»).
+
 Este documento desarrolla la sección 2 del [README](../README.md). Está pensado para completarse
 con los resultados de la investigación científica y agronómica del equipo.
 

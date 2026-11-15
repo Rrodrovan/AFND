@@ -8,9 +8,9 @@
 
 | Estado | Fase |
 |---|---|
-| Investigación científica y agronómica | Completada |
-| Arquitectura y documentación base | Este documento |
-| Implementación del MVP | Por iniciar |
+| Investigación científica y agronómica (análogos y factores de transferencia) | **No realizada**: queda como trabajo futuro (ver sección 2 y 9) |
+| Arquitectura y documentación base | Completada |
+| Implementación del MVP | **Funcional con datos reales de NASA** para la zona piloto (ver «Estado actual») |
 
 ---
 
@@ -22,7 +22,7 @@
 4. [Estructura del repositorio](#4-estructura-propuesta-del-repositorio)
 5. [Matriz de estrategias de rotación](#5-matriz-de-estrategias-de-rotación)
 6. [Roadmap de desarrollo (MVP)](#6-roadmap-de-desarrollo-mvp)
-7. [Puesta en marcha](#7-puesta-en-marcha-objetivo)
+7. [Puesta en marcha](#7-puesta-en-marcha)
 8. [Fuentes de datos NASA](#8-fuentes-de-datos-nasa)
 9. [Alcance y limitaciones](#9-alcance-y-limitaciones)
 10. [Equipo y licencia](#10-equipo-y-licencia)
@@ -58,6 +58,32 @@ El sistema responde a la pregunta central del productor y del técnico de extens
 | **SMAP** | Humedad de suelo (superficie y zona de raíces): señal directa de disponibilidad de agua para el cultivo. |
 | **Landsat / MODIS** | Índices de vegetación (NDVI/EVI), fenología y evapotranspiración: seguimiento del vigor del cultivo y de la cobertura. |
 
+### Estado actual (15 de noviembre de 2026)
+
+**Qué funciona hoy con datos reales de la NASA**
+
+- Ingesta de **NASA POWER** (clima diario), **MODIS** y **Landsat/HLS** (NDVI) y **SMAP** (humedad del suelo) a través del servicio AppEEARS, con sincronización **incremental diaria** (solo pide lo que falta) y registro de cada intento.
+- Base de datos PostgreSQL/PostGIS con las series y vistas de **frescura** (hasta qué fecha llega cada fuente) y de **resumen mensual**.
+- API REST (Spring Boot) con zonas, estado de los datos y observaciones mensuales; documentada en OpenAPI.
+- Página web con menú de zonas, mapa, panel **«Datos de la NASA en este servidor»** (estado por fuente y gráficas de lluvia, humedad del suelo y NDVI) y una **lectura en lenguaje sencillo** de lo observado (lluvia, meses secos, señal compatible con canícula, vigor de la vegetación).
+- **Zonas propuestas desde el mapa:** cualquier visitante dibuja un rectángulo y lo envía; el equipo lo aprueba antes de descargar datos.
+
+**Datos NASA cargados en la zona piloto** (cifras del servidor en la fecha indicada; cambian con cada sincronización)
+
+| Fuente | Filas cargadas | Cobertura cargada |
+|---|---|---|
+| NASA POWER (clima diario) | 4 242 | 2015-04-01 a 2026-11-10 |
+| MODIS (NDVI/EVI, 250 m) | 265 | 2015-03-22 a 2026-10-16 |
+| Landsat / HLS (NDVI/EVI, 30 m) | 211 | 2015-04-09 a 2026-11-01 |
+| SMAP (humedad del suelo) | en carga | la carga inicial se acotó a lo más reciente por los tiempos de espera de la NASA |
+
+**Qué no hace todavía**
+
+- **No calcula la matriz comparativa de las estrategias E1, E2 y E3** (sección 5). Eso exige regiones análogas, factores de transferencia y escenarios, que son trabajo de investigación que el equipo no completó. Las tarjetas de cada estrategia aparecen sin resultados en lugar de mostrar números inventados.
+- No hay puntaje global de decisión ni nivel de confianza.
+
+---
+
 ### Impacto esperado
 
 - **Productor y extensionista:** una comparación clara y trazable entre alternativas de manejo, en lugar de decisiones basadas únicamente en la costumbre o en la intuición.
@@ -68,6 +94,8 @@ El sistema responde a la pregunta central del productor y del técnico de extens
 ---
 
 ## 2. Metodología de análogos regionales
+
+> **Estado:** el método está diseñado, pero **no se ejecutó**: no hay regiones análogas registradas ni factores de transferencia calculados. El MVP muestra los datos observados de la NASA para la zona y deja los resultados por estrategia como trabajo futuro (secciones 5 y 9).
 
 ### Por qué análogos
 
@@ -103,13 +131,13 @@ Una región entra al conjunto de análogos si cumple **todos** los criterios obl
 
 ### 2.2 Registro de análogos
 
-> Falta completar con el resultado de la investigación. Cada fila debe tener una referencia verificable en `docs/referencias.md`.
+> Pendiente: no se registraron análogos. Cada fila debe tener una referencia verificable en `docs/referencias.md`.
 
 | ID | Región análoga | País | Rasgo climático | Rasgo edáfico | Estrategia evidenciada | Referencia |
 |---|---|---|---|---|---|---|
-| A1 | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` |
-| A2 | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` |
-| A3 | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` |
+| A1 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| A2 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| A3 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
 
 ### 2.3 Transferencia de evidencia
 
@@ -282,31 +310,43 @@ Las tres estrategias se evalúan con **los mismos indicadores y los mismos escen
 | | **E1 · Línea base tradicional** | **E2 · Conservación hídrica** | **E3 · Regeneración de suelos** |
 |---|---|---|---|
 | **Enfoque** | Práctica actual del productor. | Maximizar el aprovechamiento y retención de agua. | Recuperar materia orgánica y estructura del suelo. |
-| **Rotación / secuencia** | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` |
-| **Prácticas clave** | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` |
-| **Cultivos involucrados** | `[COMPLETAR]` | `[COMPLETAR]` | `[COMPLETAR]` |
-| **Análogos que la respaldan** | `[A1, A2 ...]` | `[A1, A2 ...]` | `[A1, A2 ...]` |
+| **Rotación / secuencia** | Maíz en primera (mayo–agosto) y frijol en postrera (septiembre–diciembre). | La misma secuencia, ajustando fechas de siembra a la lluvia observada. | Maíz y frijol alternados con una leguminosa de cobertura (abono verde) en el ciclo. |
+| **Prácticas clave** | Labranza convencional, suelo desnudo en la época seca, sin obras de conservación. | Labranza mínima, cobertura del suelo con rastrojo, barreras vivas o curvas a nivel, retención de agua. | Abonos verdes, aporte de materia orgánica (compost, estiércol), sin quema. |
+| **Cultivos involucrados** | Maíz, frijol | Maíz, frijol | Maíz, frijol y una leguminosa de cobertura |
+| **Análogos que la respaldan** | Pendiente | Pendiente | Pendiente |
+
+> Las rotaciones y prácticas son una **definición de trabajo** basada en prácticas ampliamente documentadas para el Corredor Seco. **No fueron validadas con productores ni con técnicos** ni se respaldan aún con análogos.
 
 ### 5.2 Matriz comparativa de resultados
 
-> Valores a rellenar con las métricas finales del motor analítico. Reportar siempre `valor [mín – máx]` para reflejar la incertidumbre.
+> **Pendiente.** El MVP no calcula esta matriz: requiere análogos y factores de transferencia (sección 2). Se muestra el diseño de indicadores para el trabajo futuro; cuando haya resultados se reportarán como `valor [mín – máx]` para reflejar la incertidumbre.
 
 | Indicador | Unidad | Fuente principal | E1 · Línea base | E2 · Conservación hídrica | E3 · Regeneración de suelos |
 |---|---|---|---|---|---|
-| Rendimiento esperado, año normal | t/ha | Análogos + POWER | `[ ]` | `[ ]` | `[ ]` |
-| Rendimiento esperado, año seco | t/ha | Análogos + POWER + SMAP | `[ ]` | `[ ]` | `[ ]` |
-| Variabilidad interanual del rendimiento | % | Escenarios | `[ ]` | `[ ]` | `[ ]` |
-| Índice de estrés hídrico del cultivo | 0–1 | POWER + SMAP | `[ ]` | `[ ]` | `[ ]` |
-| Humedad de suelo en zona de raíces (media del ciclo) | m³/m³ | SMAP | `[ ]` | `[ ]` | `[ ]` |
-| Vigor de vegetación (NDVI pico) | 0–1 | Landsat / MODIS | `[ ]` | `[ ]` | `[ ]` |
-| Cobertura del suelo en época seca | % | Landsat / MODIS | `[ ]` | `[ ]` | `[ ]` |
-| Riesgo de pérdida de cosecha por sequía | % | Escenarios | `[ ]` | `[ ]` | `[ ]` |
-| Tendencia de materia orgánica del suelo (5 años) | Δ % | Análogos | `[ ]` | `[ ]` | `[ ]` |
-| Riesgo de erosión | bajo/medio/alto | Suelo + cobertura | `[ ]` | `[ ]` | `[ ]` |
-| Costo de implementación | USD/ha | Análisis económico | `[ ]` | `[ ]` | `[ ]` |
-| Plazo para ver beneficios | años | Análogos | `[ ]` | `[ ]` | `[ ]` |
-| **Puntaje global de decisión** | 0–100 | Reglas del backend | `[ ]` | `[ ]` | `[ ]` |
-| **Nivel de confianza** | alto/medio/bajo | Nº y calidad de análogos | `[ ]` | `[ ]` | `[ ]` |
+| Rendimiento esperado, año normal | t/ha | Análogos + POWER | — | — | — |
+| Rendimiento esperado, año seco | t/ha | Análogos + POWER + SMAP | — | — | — |
+| Variabilidad interanual del rendimiento | % | Escenarios | — | — | — |
+| Índice de estrés hídrico del cultivo | 0–1 | POWER + SMAP | — | — | — |
+| Humedad de suelo en zona de raíces (media del ciclo) | m³/m³ | SMAP | — | — | — |
+| Vigor de vegetación (NDVI pico) | 0–1 | Landsat / MODIS | — | — | — |
+| Cobertura del suelo en época seca | % | Landsat / MODIS | — | — | — |
+| Riesgo de pérdida de cosecha por sequía | % | Escenarios | — | — | — |
+| Tendencia de materia orgánica del suelo (5 años) | Δ % | Análogos | — | — | — |
+| Riesgo de erosión | bajo/medio/alto | Suelo + cobertura | — | — | — |
+| Costo de implementación | USD/ha | Análisis económico | — | — | — |
+| Plazo para ver beneficios | años | Análogos | — | — | — |
+| **Puntaje global de decisión** | 0–100 | Reglas del backend | — | — | — |
+| **Nivel de confianza** | alto/medio/bajo | Nº y calidad de análogos | — | — | — |
+
+#### Lo que sí medimos hoy con datos NASA (zona piloto, sin distinguir estrategias)
+
+| Dato | Fuente | Dónde se ve |
+|---|---|---|
+| Lluvia mensual y días con lluvia | NASA POWER | Panel de datos NASA y `GET /api/v1/zones/{zona}/observations/monthly` |
+| Temperatura media mensual | NASA POWER | Misma API |
+| Humedad del suelo (superficie y zona de raíces) | SMAP | Panel de datos NASA (cuando la carga de SMAP termina) |
+| Vigor de la vegetación (NDVI) | MODIS y Landsat/HLS | Panel de datos NASA |
+| Lectura automática: meses secos, señal de canícula, NDVI frente al año anterior | Derivada de lo anterior | Panel «Lectura de los datos» |
 
 ### 5.3 Regla de decisión (borrador)
 
@@ -318,7 +358,7 @@ puntaje(E) = Σ  w_i × indicador_normalizado_i(E)
 
 - Los pesos `w_i` son **configurables** (por ejemplo: priorizar resiliencia a la sequía frente a costo).
 - Se reporta también el **nivel de confianza** según el número y la calidad de los análogos que respaldan la estrategia.
-- Pesos por defecto: `[COMPLETAR TRAS LA VALIDACIÓN CON EL EQUIPO]`.
+- Pesos por defecto: pendiente. El puntaje global **no está implementado** en el MVP.
 
 ---
 
@@ -328,38 +368,43 @@ Prioridad: tener un **flujo completo de extremo a extremo** (aunque simple) lo a
 
 ### Fase 0 · Cimientos
 - [ ] Definir convenciones de ramas y revisión de código
-- [ ] Crear `docker-compose.yml` con los tres servicios y red compartida
-- [ ] Crear `.env.example` y documentar variables de entorno
-- [ ] Registrar cuenta en NASA Earthdata y compartir el método de credenciales con el equipo
+- [x] Crear `docker-compose.yml` con los tres servicios y red compartida
+- [x] Crear `.env.example` y documentar variables de entorno
+- [x] Registrar cuenta en NASA Earthdata y compartir el método de credenciales con el equipo
 - [ ] Verificar que `docker compose up` levanta los tres contenedores vacíos
 
 ### Fase 1 · Base de datos
-- [ ] Contenedor PostgreSQL con extensión PostGIS habilitada
-- [ ] Esquema inicial (`zone`, `climate_daily`, `soil_moisture`, `vegetation_index`, `soil_profile`, `crop`, `strategy`, `analog_region`, `strategy_result`)
-- [ ] Datos semilla: cultivos, las 3 estrategias y el registro de análogos
-- [ ] Definir y cargar la geometría de la(s) zona(s) piloto
+- [x] Contenedor PostgreSQL con extensión PostGIS habilitada
+- [x] Esquema inicial (`zone`, `climate_daily`, `soil_moisture`, `vegetation_index`, `soil_profile`, `crop`, `strategy`, `analog_region`, `strategy_result`)
+- [x] Datos semilla: cultivos y las 3 estrategias
+- [ ] Datos semilla: registro de análogos (no se realizó la investigación)
+- [x] Definir y cargar la geometría de la(s) zona(s) piloto
 
 ### Fase 2 · Motor analítico (Python)
-- [ ] Cliente de NASA POWER (serie diaria por zona)
-- [ ] Cliente de SMAP (humedad de suelo)
-- [ ] Cliente de Landsat/MODIS (NDVI/EVI)
-- [ ] Limpieza y agregación temporal/espacial
-- [ ] Cálculo de índices de sequía y de estrés hídrico
-- [ ] Cálculo de métricas por estrategia con factores de transferencia
-- [ ] Carga idempotente a PostgreSQL/PostGIS
-- [ ] Pruebas unitarias de las métricas clave
+- [x] Cliente de NASA POWER (serie diaria por zona)
+- [x] Cliente de SMAP (humedad de suelo)
+- [x] Cliente de Landsat/MODIS (NDVI/EVI)
+- [x] Limpieza y agregación temporal/espacial
+- [x] Índices de sequía básicos (racha seca más larga, totales mensuales)
+- [ ] Índice de estrés hídrico del cultivo
+- [x] Sincronización incremental diaria de las cuatro fuentes
+- [ ] Cálculo de métricas por estrategia con factores de transferencia (pendiente: requiere análogos)
+- [x] Carga idempotente a PostgreSQL/PostGIS
+- [x] Pruebas unitarias de las métricas clave
 
 ### Fase 3 · Backend (Spring Boot)
-- [ ] Proyecto base con conexión a PostgreSQL/PostGIS
-- [ ] Entidades y repositorios
-- [ ] Motor de reglas: puntaje global y nivel de confianza
-- [ ] Endpoints REST: zonas, series, estrategias, comparación
-- [ ] Documentación OpenAPI/Swagger
-- [ ] Pruebas de los endpoints principales
+- [x] Proyecto base con conexión a PostgreSQL/PostGIS
+- [x] Entidades y repositorios
+- [ ] Motor de reglas: puntaje global y nivel de confianza (pendiente: requiere resultados por estrategia)
+- [x] Endpoints REST: zonas, series, estrategias, comparación
+- [x] Documentación OpenAPI/Swagger
+- [x] Pruebas de los endpoints principales
 
 ### Fase 4 · Visualización y demo
-- [ ] Interfaz mínima que consuma la API (selector de zona/cultivo y comparación de las 3 estrategias)
-- [ ] Mapa de la zona piloto con capa de índice de vegetación o humedad
+- [x] Interfaz mínima que consuma la API (menú de zonas y tarjetas de las 3 estrategias; sin resultados hasta que existan)
+- [x] Panel de datos NASA con lectura en lenguaje sencillo y zonas propuestas desde el mapa
+- [x] Mapa de la zona elegida y para proponer zonas nuevas
+- [ ] Capa de índice de vegetación o humedad sobre el mapa
 - [ ] Gráficas comparativas por escenario (normal / seco / canícula)
 - [ ] Mostrar siempre los análogos y la incertidumbre detrás de cada resultado
 
@@ -367,16 +412,16 @@ Prioridad: tener un **flujo completo de extremo a extremo** (aunque simple) lo a
 - [ ] Rellenar la matriz de la sección 5 con los resultados finales
 - [ ] Completar `docs/referencias.md` con todas las fuentes
 - [ ] Capturas, diagramas finales y video/guion de la demo
-- [ ] Revisar que el README refleje el estado real del proyecto
+- [x] Revisar que el README refleje el estado real del proyecto
 - [ ] Ensayo de la presentación y envío del proyecto en la plataforma de Space Apps
 
 > **Regla de corte:** si el tiempo se agota, el MVP mínimo defendible es **Fases 0, 1, 2 y 3** con una **comparación visible de las 3 estrategias** (aunque sea con una interfaz muy simple).
 
 ---
 
-## 7. Puesta en marcha (objetivo)
+## 7. Puesta en marcha
 
-> Esta sección describe el resultado esperado; se actualizará conforme el código exista.
+> Para desplegar en un servidor (servicio, Nginx, HTTPS, sincronización diaria) ver [`deploy/README.md`](deploy/README.md). El manual para quien usa la página está en [`docs/manual-de-usuario.md`](docs/manual-de-usuario.md).
 
 ```bash
 # 1. Clonar
@@ -390,8 +435,8 @@ cp .env.example .env
 # 3. Levantar todos los servicios
 docker compose up --build
 
-# 4. Ejecutar la ingesta inicial (ejemplo)
-docker compose run --rm python-etl python -m src.cli ingest --zone piloto
+# 4. Descargar los datos de la NASA (incremental; la primera vez puede tardar horas)
+docker compose run --rm python-etl python -m src.cli sync --all-zones
 
 # 5. Consultar la API
 curl http://localhost:8080/api/v1/strategies/compare?zone=piloto
@@ -404,7 +449,8 @@ curl http://localhost:8080/api/v1/strategies/compare?zone=piloto
 | `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | Credenciales de la base de datos. |
 | `EARTHDATA_USERNAME` / `EARTHDATA_PASSWORD` | Credenciales de NASA Earthdata (SMAP, Landsat/MODIS). |
 | `PILOT_ZONE_BBOX` | Caja geográfica de la zona piloto. |
-| `ETL_START_DATE` / `ETL_END_DATE` | Rango temporal de ingesta. |
+| `ETL_START_DATE` / `ETL_END_DATE` | Rango temporal de ingesta (la fecha de inicio solo aplica a fuentes sin datos previos). |
+| `TERRASHIFT_ADMIN_TOKEN` | Token para aprobar zonas propuestas; sin él, las funciones de administración quedan desactivadas. |
 
 ---
 
@@ -447,6 +493,9 @@ Esta sección separa lo que el proyecto **sí hace** de lo que **no hace**, y pa
 | L4 | Los parámetros edáficos tienen cobertura y detalle limitados | Menor precisión en retención de agua y materia orgánica | Reportar rangos, no valores puntuales |
 | L5 | Los resultados son estimaciones, no mediciones | Pueden no reflejar un año o finca concreta | Intervalos de incertidumbre y nivel de confianza en cada resultado |
 | L6 | El tiempo del hackathon limita la validación | Validación parcial contra señal satelital | Priorizar validación de las métricas clave y documentar lo pendiente |
+| L7 | No se realizó la investigación de análogos | **No hay comparación cuantitativa de E1, E2 y E3**; las tarjetas salen sin resultados | Mostrar datos observados reales de la NASA y declarar la comparación como trabajo futuro |
+| L8 | Las colas de AppEEARS son largas | La primera descarga de SMAP, MODIS y Landsat tarda horas y se acotó a lo reciente | Sincronización incremental que reutiliza tareas ya enviadas y se reintenta cada día |
+| L9 | Cada zona se descarga como un rectángulo | No se pueden delimitar terrenos de forma irregular | Dibujar el rectángulo que contenga el terreno; se explica en el manual de usuario |
 
 ### 9.3 Uso responsable
 
@@ -455,6 +504,7 @@ Esta sección separa lo que el proyecto **sí hace** de lo que **no hace**, y pa
 
 ### 9.4 Trabajo futuro
 
+- Completar la investigación: registro de análogos, factores de transferencia y escenarios, y con ellos la matriz de la sección 5.
 - Incorporar datos de campo de productores.
 - Validar con ensayos locales en el Corredor Seco.
 - Ampliar a otros cultivos y países de la región.
