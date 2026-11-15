@@ -15,6 +15,9 @@ del README debe poder rastrearse hasta una referencia de esta lista.
 |---|---|---|
 | NASA POWER | https://power.larc.nasa.gov/ | `[COMPLETAR]` |
 | NASA Earthdata (SMAP, Landsat, MODIS) | https://www.earthdata.nasa.gov/ | `[COMPLETAR]` |
+| AppEEARS: documentación de la API | https://appeears.earthdatacloud.nasa.gov/api/ | 2026-11-14 |
+| AppEEARS: catálogo de productos y capas (`SPL4SMGP.008`, `MOD13Q1.061`, `HLSL30.020`) | https://appeears.earthdatacloud.nasa.gov/api/product | 2026-11-14 |
+| SMAP L4 (`SPL4SMGP`) en NSIDC DAAC | https://nsidc.org/data/spl4smgp | 2026-11-14 |
 
 ## Datos de suelo y agronomía
 
