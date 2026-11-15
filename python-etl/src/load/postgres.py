@@ -19,19 +19,46 @@ def connect() -> psycopg.Connection:
 
 
 def ensure_zone(conn: psycopg.Connection, code: str, name: str, bbox: BBox) -> int:
-    """Crea o actualiza la zona (rectángulo de la caja) y devuelve su id."""
+    """Crea o actualiza la zona (rectángulo de la caja) y devuelve su id.
+
+    Una zona creada o actualizada por el ETL desde su configuración queda aprobada.
+    """
     min_lon, min_lat, max_lon, max_lat = bbox
     with conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO zone (code, name, geom)
-            VALUES (%s, %s, ST_Multi(ST_MakeEnvelope(%s, %s, %s, %s, 4326)))
-            ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, geom = EXCLUDED.geom
+            INSERT INTO zone (code, name, geom, min_lon, min_lat, max_lon, max_lat)
+            VALUES (%s, %s, ST_Multi(ST_MakeEnvelope(%s, %s, %s, %s, 4326)), %s, %s, %s, %s)
+            ON CONFLICT (code) DO UPDATE SET
+                name = EXCLUDED.name, geom = EXCLUDED.geom,
+                min_lon = EXCLUDED.min_lon, min_lat = EXCLUDED.min_lat,
+                max_lon = EXCLUDED.max_lon, max_lat = EXCLUDED.max_lat
             RETURNING id
             """,
-            (code, name, min_lon, min_lat, max_lon, max_lat),
+            (code, name, min_lon, min_lat, max_lon, max_lat, min_lon, min_lat, max_lon, max_lat),
         )
         return cur.fetchone()[0]
+
+
+def list_approved_zones(conn: psycopg.Connection) -> list[tuple[int, str, BBox]]:
+    """Zonas aprobadas con su caja: [(id, código, (min_lon, min_lat, max_lon, max_lat))]."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT id, code, min_lon, min_lat, max_lon, max_lat
+            FROM zone
+            WHERE status = 'approved' AND min_lon IS NOT NULL
+            ORDER BY id
+            """
+        )
+        return [(r[0], r[1], (r[2], r[3], r[4], r[5])) for r in cur.fetchall()]
+
+
+def zone_bbox(conn: psycopg.Connection, code: str) -> BBox | None:
+    with conn.cursor() as cur:
+        cur.execute("SELECT min_lon, min_lat, max_lon, max_lat FROM zone WHERE code = %s AND min_lon IS NOT NULL", (code,))
+        row = cur.fetchone()
+    return tuple(row) if row else None
 
 
 SOIL_MOISTURE_SOURCE = "SMAP SPL4SMGP.008"

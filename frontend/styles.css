@@ -100,3 +100,34 @@ body {
 .chart__bar { fill: var(--green-700); }
 .chart__line { fill: none; stroke: var(--green-700); stroke-width: 2; }
 .chart__dot { fill: var(--green-900); }
+
+/* --- Mapa de zonas --- */
+.zone-map { height: 380px; border-radius: 8px; border: 1px solid var(--sand-200); z-index: 0; }
+.zone-form { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.75rem; }
+.zone-form label { font-weight: 600; }
+.zone-form input {
+  flex: 1 1 14rem; max-width: 22rem; padding: 0.5rem 0.7rem;
+  border: 1px solid #b9b19c; border-radius: 8px; font: inherit; background: #fff;
+}
+.zone-form button, .admin button {
+  padding: 0.5rem 1rem; border: 0; border-radius: 8px; font: inherit; font-weight: 600;
+  background: var(--green-700); color: #fff; cursor: pointer;
+}
+.zone-form button:hover:not(:disabled), .admin button:hover:not(:disabled) { background: var(--green-900); }
+.zone-form button:disabled, .admin button:disabled { opacity: 0.5; cursor: not-allowed; }
+.zone-form .button--ghost, .admin .button--ghost { background: var(--sand-200); color: var(--ink); }
+.zone-form .button--ghost:hover:not(:disabled), .admin .button--ghost:hover:not(:disabled) { background: #ddd3bb; }
+.zone-form :focus-visible, .admin :focus-visible { outline: 3px solid #e0a43a; outline-offset: 2px; }
+.zone-msg { margin: 0.6rem 0 0; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.92rem; }
+.zone-msg--info { background: var(--sand-200); }
+.zone-msg--ok { background: var(--live-bg); color: var(--green-900); }
+.zone-msg--error { background: var(--error-bg); color: var(--error); }
+
+/* --- Página de administración --- */
+.admin { margin: 1.5rem auto 3rem; }
+.admin__row { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 0.75rem 0; }
+.admin__row input { flex: 1 1 16rem; max-width: 26rem; padding: 0.5rem 0.7rem; border: 1px solid #b9b19c; border-radius: 8px; font: inherit; }
+.admin__item { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between; padding: 0.8rem 1rem; margin: 0.6rem 0; background: #fff; border: 1px solid var(--sand-200); border-radius: var(--radius); }
+.admin__item h3 { margin: 0; font-size: 1rem; }
+.admin__item p { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.88rem; }
+.admin__actions { display: flex; gap: 0.5rem; }

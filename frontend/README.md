@@ -10,6 +10,12 @@ desde la carpeta `frontend/`.
 3. Si el servidor no responde (por ejemplo, un filtro de red lo bloquea), muestra la **copia de respaldo**
    `data/snapshot.json` y lo indica con la etiqueta "Datos de respaldo".
 
+## Mapa de zonas
+
+La sección "Zonas de estudio" usa Leaflet (incluido en `vendor/leaflet/`, sin CDN) y mosaicos de OpenStreetMap.
+Se dibuja el rectángulo con dos clics y se envía como solicitud; el equipo la aprueba en `admin.html` (pide el token de
+administrador, que no se guarda en el navegador). Si el servidor no responde, el mapa sigue sirviendo para dibujar pero no para enviar.
+
 ## Probar en local
 
 ```bash

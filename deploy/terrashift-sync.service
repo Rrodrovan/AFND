@@ -8,7 +8,7 @@ Type=oneshot
 User=__USER__
 WorkingDirectory=__REPO__/python-etl
 EnvironmentFile=/etc/terrashift-etl.env
-ExecStart=__REPO__/python-etl/.venv/bin/python -m src.cli sync --zone piloto
+ExecStart=__REPO__/python-etl/.venv/bin/python -m src.cli sync --all-zones
 # La primera sincronizacion descarga todo el historico y puede tardar horas.
 TimeoutStartSec=6h
 Nice=10

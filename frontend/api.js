@@ -72,7 +72,40 @@
     }
   }
 
-  var api = { loadComparison: loadComparison, loadObservations: loadObservations };
+  // Zonas aprobadas (para dibujarlas en el mapa). Si el servidor no responde, devuelve null.
+  async function loadZones(config) {
+    try {
+      var zones = await getJson(config.apiBase.replace(/\/+$/, "") + "/api/v1/zones", config.timeoutMs);
+      return Array.isArray(zones) ? zones : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Envía una solicitud de zona. Devuelve {ok:true, zone} o {ok:false, error} con un mensaje para mostrar.
+  async function requestZone(config, payload) {
+    var controller = new AbortController();
+    var timer = setTimeout(function () { controller.abort(); }, config.timeoutMs);
+    try {
+      var res = await root.fetch(config.apiBase.replace(/\/+$/, "") + "/api/v1/zones/requests", {
+        method: "POST",
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload),
+      });
+      var body = null;
+      try { body = await res.json(); } catch (_) { /* respuesta sin cuerpo JSON */ }
+      if (res.ok) return { ok: true, zone: body };
+      var text = body && typeof body.error === "string" ? body.error : "El servidor no aceptó la solicitud (HTTP " + res.status + ").";
+      return { ok: false, error: text };
+    } catch (_) {
+      return { ok: false, error: "No se pudo contactar con el servidor. Intenta de nuevo en unos minutos." };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  var api = { loadComparison: loadComparison, loadObservations: loadObservations, loadZones: loadZones, requestZone: requestZone };
   root.TerraShiftApi = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

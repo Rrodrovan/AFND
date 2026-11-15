@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>TerraShift · Revisión de zonas</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Solo equipo</p>
+      <h1>Revisión de zonas</h1>
+      <p class="lead">Aprueba o rechaza las zonas propuestas desde el mapa. Al aprobar una zona, la sincronización diaria empezará a descargar sus datos de la NASA.</p>
+    </div>
+  </header>
+  <main class="wrap admin">
+    <form id="admin-form" class="admin__row">
+      <label for="token">Token de administrador</label>
+      <input id="token" type="password" autocomplete="off" spellcheck="false">
+      <button type="submit">Ver pendientes</button>
+    </form>
+    <p id="admin-msg" class="zone-msg zone-msg--info" role="status" aria-live="polite">Escribe el token (no se guarda en el navegador).</p>
+    <section id="pending" aria-label="Zonas pendientes"></section>
+    <p><a href="./index.html">← Volver a la página principal</a></p>
+  </main>
+  <script src="./config.js"></script>
+  <script src="./admin.js"></script>
+</body>
+</html>

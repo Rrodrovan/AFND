@@ -188,6 +188,18 @@
     if (zone) run(zone);
   });
 
+  // Mapa de zonas: si Leaflet no cargó (p. ej. sin red), la página sigue funcionando sin él.
+  var picker = window.TerraShiftZonePicker && window.TerraShiftZonePicker.init(cfg, {
+    onSelectZone: function (code) {
+      zoneInput.value = code;
+      run(code);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+  });
+  if (picker) {
+    window.TerraShiftApi.loadZones(cfg).then(function (zones) { picker.showZones(zones); });
+  }
+
   document.getElementById("repo-link").href = cfg.repoUrl;
   document.getElementById("docs-link").href = cfg.apiBase.replace(/\/+$/, "") + "/api/swagger-ui.html";
 
