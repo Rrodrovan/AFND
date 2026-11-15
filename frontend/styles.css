@@ -390,3 +390,5 @@ main section, .results-block { scroll-margin-top: 5rem; }
 .interpretation__list li { margin: 0; padding: 0.8rem 1rem; background: var(--sand-50); border-left: 4px solid var(--ocre); border-radius: 10px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .interpretation__list li:hover { transform: translateX(3px); box-shadow: var(--shadow); }
 .interpretation__why { margin-top: 0.3rem; }
+
+.site-footer__nasa { font-size: 0.88rem; border-left: 3px solid var(--ocre); padding-left: 0.6rem; margin: 0.5rem 0; }
