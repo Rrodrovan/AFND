@@ -77,3 +77,26 @@ body {
 
 .footer { padding: 1.5rem 0 3rem; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--sand-200); }
 .footer a { color: var(--green-700); }
+
+/* --- Panel de datos de la NASA --- */
+.panel {
+  margin: 0 0 1.5rem; padding: 1.1rem 1.25rem; background: #fff;
+  border: 1px solid var(--sand-200); border-radius: var(--radius);
+}
+.panel h2 { margin: 0 0 0.25rem; font-size: 1.15rem; }
+.panel__lead { margin: 0 0 0.9rem; color: var(--muted); }
+.table-wrap { overflow-x: auto; }
+.badge { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
+.badge--ok { background: var(--live-bg); color: var(--green-900); }
+.badge--late { background: var(--amber-bg); color: var(--amber); }
+.badge--error { background: var(--error-bg); color: var(--error); }
+.badge--none { background: var(--sand-200); color: var(--muted); }
+.charts { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 1rem; }
+.chart { margin: 0; }
+.chart figcaption { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.25rem; }
+.chart__svg { width: 100%; height: auto; display: block; }
+.chart__axis { stroke: #b9b19c; stroke-width: 1; }
+.chart__tick { font-size: 9px; fill: var(--muted); }
+.chart__bar { fill: var(--green-700); }
+.chart__line { fill: none; stroke: var(--green-700); stroke-width: 2; }
+.chart__dot { fill: var(--green-900); }

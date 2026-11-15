@@ -51,6 +51,40 @@ paths:
                 $ref: "#/components/schemas/ComparisonResponse"
         "404":
           description: La zona no existe
+  /api/v1/zones/{zone}/data-status:
+    get:
+      summary: Estado de las fuentes de datos de la NASA en una zona
+      description: Hasta qué fecha llegan los datos de cada fuente y cómo fue la última sincronización.
+      parameters:
+        - { name: zone, in: path, required: true, schema: { type: string }, description: "Código de la zona (por ejemplo, piloto)" }
+      responses:
+        "200":
+          description: Una entrada por fuente (power, smap, modis, landsat), también las que aún no tienen datos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataStatusResponse"
+        "404":
+          description: La zona no existe
+  /api/v1/zones/{zone}/observations/monthly:
+    get:
+      summary: Series mensuales observadas (lluvia, temperatura, humedad del suelo, NDVI)
+      parameters:
+        - { name: zone, in: path, required: true, schema: { type: string } }
+        - name: months
+          in: query
+          required: false
+          description: Cuántos meses hacia atrás (1 a 240; por defecto 24)
+          schema: { type: integer, default: 24, minimum: 1, maximum: 240 }
+      responses:
+        "200":
+          description: Un elemento por mes con datos; las variables sin dato ese mes vienen en null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservationsResponse"
+        "404":
+          description: La zona no existe
 components:
   schemas:
     Strategy:
@@ -85,3 +119,39 @@ components:
           type: array
           items: { $ref: "#/components/schemas/StrategyComparison" }
         note: { type: string }
+    DataSourceStatus:
+      type: object
+      properties:
+        source: { type: string, enum: [power, smap, modis, landsat] }
+        label: { type: string }
+        firstDate: { type: string, format: date, nullable: true }
+        lastDate: { type: string, format: date, nullable: true }
+        rows: { type: integer, format: int64 }
+        lastSyncOkAt: { type: string, format: date-time, nullable: true }
+        lastRunStatus: { type: string, enum: [ok, up_to_date, error], nullable: true }
+        lastRunAt: { type: string, format: date-time, nullable: true }
+    DataStatusResponse:
+      type: object
+      properties:
+        zone: { type: string }
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/DataSourceStatus" }
+    MonthlyObservation:
+      type: object
+      properties:
+        month: { type: string, format: date, description: Primer día del mes }
+        precipMmTotal: { type: number, nullable: true }
+        precipDays: { type: integer, format: int64, nullable: true, description: Días del mes con dato de lluvia }
+        t2mMeanC: { type: number, nullable: true }
+        surfaceM3m3Mean: { type: number, nullable: true }
+        rootzoneM3m3Mean: { type: number, nullable: true }
+        ndviModisMean: { type: number, nullable: true }
+        ndviLandsatMean: { type: number, nullable: true }
+    ObservationsResponse:
+      type: object
+      properties:
+        zone: { type: string }
+        months:
+          type: array
+          items: { $ref: "#/components/schemas/MonthlyObservation" }
