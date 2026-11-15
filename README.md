@@ -8,7 +8,7 @@
 
 | Estado | Fase |
 |---|---|
-| Investigación científica y agronómica (análogos y factores de transferencia) | **No realizada**: queda como trabajo futuro (ver sección 2 y 9) |
+| Método de comparación de estrategias | **Balance hídrico simple calculado directamente con datos de la NASA** (ver sección 2) |
 | Arquitectura y documentación base | Completada |
 | Implementación del MVP | **Funcional con datos reales de NASA** para la zona piloto (ver «Estado actual») |
 
@@ -17,7 +17,7 @@
 ## Tabla de contenidos
 
 1. [Resumen ejecutivo e impacto](#1-resumen-ejecutivo-e-impacto)
-2. [Metodología de análogos regionales](#2-metodología-de-análogos-regionales)
+2. [Metodología: balance hídrico con datos de la NASA](#2-metodología-balance-hídrico-con-datos-de-la-nasa)
 3. [Arquitectura del sistema](#3-arquitectura-del-sistema)
 4. [Estructura del repositorio](#4-estructura-propuesta-del-repositorio)
 5. [Matriz de estrategias de rotación](#5-matriz-de-estrategias-de-rotación)
@@ -79,8 +79,8 @@ El sistema responde a la pregunta central del productor y del técnico de extens
 
 **Qué no hace todavía**
 
-- **No calcula la matriz comparativa de las estrategias E1, E2 y E3** (sección 5). Eso exige regiones análogas, factores de transferencia y escenarios, que son trabajo de investigación que el equipo no completó. Las tarjetas de cada estrategia aparecen sin resultados en lugar de mostrar números inventados.
-- No hay puntaje global de decisión ni nivel de confianza.
+- No hay puntaje global de decisión (sección 5.3).
+- Los resultados de E1, E2 y E3 son estimaciones del modelo de la sección 2, no mediciones de campo.
 
 ---
 
@@ -88,76 +88,63 @@ El sistema responde a la pregunta central del productor y del técnico de extens
 
 - **Productor y extensionista:** una comparación clara y trazable entre alternativas de manejo, en lugar de decisiones basadas únicamente en la costumbre o en la intuición.
 - **Resiliencia climática:** priorizar prácticas que reduzcan la exposición a la sequía y recuperen la capacidad del suelo para retener agua.
-- **Escalabilidad:** la metodología no depende de una sola finca; puede replicarse en otras zonas del Corredor Seco y de Centroamérica incorporando nuevos análogos.
+- **Escalabilidad:** la metodología no depende de una sola finca; puede replicarse en otras zonas del Corredor Seco y de Centroamérica incorporando nuevas zonas con sus datos de la NASA.
 - **Ciencia abierta:** uso exclusivo de datos abiertos y de código reproducible.
 
 ---
 
-## 2. Metodología de análogos regionales
+## 2. Metodología: balance hídrico con datos de la NASA
 
-> **Estado:** el método está diseñado, pero **no se ejecutó**: no hay regiones análogas registradas ni factores de transferencia calculados. El MVP muestra los datos observados de la NASA para la zona y deja los resultados por estrategia como trabajo futuro (secciones 5 y 9).
-
-### Por qué análogos
-
-En Nicaragua **no existen series históricas abiertas y hiperlocales** (a escala de parcela) de rendimientos, humedad de suelo medida en campo y ensayos de rotación de largo plazo. Para no depender de datos que no tenemos, **transferimos evidencia** desde regiones de América Latina con condiciones climáticas y edáficas comparables, donde ya se han documentado intervenciones de manejo con resultados medibles.
-
-### Principio
-
-> Si dos regiones comparten un **régimen de aridez/sequía** y una **condición de suelo** similares, la respuesta de un cultivo a una estrategia de manejo documentada en una región es una **hipótesis razonable y verificable** para la otra.
+La comparación de E1, E2 y E3 se calcula **directamente con las series observadas de la NASA** para la zona (lluvia y temperatura de NASA POWER, más SMAP y NDVI como contraste). Es un modelo **simple y transparente**: un balance de agua diario del suelo con métodos de la FAO, que cualquiera puede revisar y ajustar.
 
 ### Pasos del método
 
 ```
-1. Caracterizar el sitio piloto        ->  clima (NASA POWER), humedad (SMAP), vegetación (Landsat/MODIS), suelo
-2. Seleccionar regiones análogas       ->  similitud climática y edáfica (criterios de la sección 2.1)
-3. Extraer evidencia de las análogas   ->  efecto de cada estrategia sobre rendimiento, humedad y suelo
-4. Transferir con factores de ajuste   ->  corrección por diferencias entre análoga y piloto
-5. Simular y comparar estrategias      ->  indicadores de la matriz (sección 5) con intervalos de incertidumbre
-6. Validar contra señal satelital      ->  consistencia con NDVI/SMAP observados en el piloto
+1. Leer el clima diario observado de la zona   ->  lluvia, temperatura máxima y mínima (NASA POWER)
+2. Calcular la demanda de agua                  ->  evapotranspiración de referencia ET0 (Hargreaves-Samani, con Ra de FAO-56)
+3. Simular cada ciclo de cultivo, año por año   ->  balance de agua del suelo con coeficientes Kc/Kcb de FAO-56
+4. Aplicar el manejo de cada estrategia         ->  E1, E2 y E3 reciben el mismo clima; cambia solo el manejo
+5. Convertir el estrés de agua en rendimiento   ->  rendimiento relativo con la función de respuesta de FAO-33
+6. Agrupar los años en escenarios                ->  normal, seco y canícula, con media y rango [mín – máx]
+7. Contrastar con la señal satelital            ->  NDVI (MODIS/Landsat) y humedad SMAP observados en la zona
 ```
 
-### 2.1 Criterios de selección de una región análoga
+### 2.1 Balance de agua del suelo
 
-Una región entra al conjunto de análogos si cumple **todos** los criterios obligatorios y la mayor parte de los deseables.
+- **Demanda:** `ET0` diaria con Hargreaves-Samani (necesita temperatura máxima, mínima y latitud de la zona); la radiación extraterrestre sale de las ecuaciones de FAO-56.
+- **Cultivo:** coeficiente `Kc = Kcb + Ke`, donde `Kcb` es la transpiración del cultivo según su etapa (inicial, desarrollo, media, final) y `Ke` la evaporación del suelo descubierto. Maíz: siembra de primera (mayo); frijol: siembra de postrera (septiembre).
+- **Suelo:** un depósito de agua con capacidad `TAW` (agua útil para las raíces). La lluvia lo llena, la evaporación y la transpiración lo vacían, y el exceso se pierde. Cuando el agua disponible baja de la fracción tolerable `p`, aparece estrés (`Ks < 1`).
+- **Rendimiento relativo:** `1 − Ky · (1 − Ta/Tc)`, donde `Ta/Tc` es la transpiración real frente a la potencial del ciclo y `Ky` la sensibilidad del cultivo (FAO-33).
 
-| Criterio | Tipo | Descripción |
+### 2.2 Cómo se diferencian E1, E2 y E3
+
+Las tres estrategias reciben **exactamente la misma lluvia y temperatura**. Solo cambian tres parámetros de manejo, que están a la vista en `python-etl/src/metrics/strategies.py`:
+
+| Parámetro | E1 · Línea base | E2 · Conservación hídrica | E3 · Regeneración de suelos |
+|---|---|---|---|
+| Escorrentía (fracción de la lluvia que se pierde) | 0,15 | 0,08 (barreras, curvas a nivel) | 0,12 |
+| Factor de evaporación del suelo | 1,00 (suelo descubierto) | 0,85 (cobertura con rastrojo) | 1,00 |
+| Capacidad de agua del suelo (`TAW`) | ×1,00 | ×1,00 | ×1,10 (más materia orgánica) |
+
+Estos valores son **supuestos explícitos del modelo**; se pueden modificar para hacer un análisis de sensibilidad y ver cuánto cambia el resultado.
+
+### 2.3 Escenarios con años realmente observados
+
+No se usan proyecciones: los escenarios se arman con los años de la serie de NASA POWER de la zona.
+
+| Escenario | Definición | Datos usados |
 |---|---|---|
-| Régimen de precipitación | Obligatorio | Precipitación anual y estacionalidad comparables (temporada húmeda y seca marcadas). |
-| Déficit hídrico | Obligatorio | Índice de aridez o de sequía en un rango similar al del piloto. |
-| Condición edáfica | Obligatorio | Suelos degradados con textura, materia orgánica y erosión comparables. |
-| Cultivos | Deseable | Granos básicos o cultivos con respuesta fisiológica comparable. |
-| Intervención documentada | Obligatorio | Evidencia publicada de una intervención con resultados medibles. |
-| Escala de productor | Deseable | Agricultura de pequeña escala. |
+| Año normal | Años intermedios (tercio central) por lluvia del ciclo | Lluvia diaria de NASA POWER |
+| Año seco | Los 3 años con menos lluvia en el ciclo del cultivo | Lluvia diaria de NASA POWER |
+| Canícula prolongada | Los 3 años con menos lluvia en julio–agosto | Lluvia diaria de NASA POWER |
 
-### 2.2 Registro de análogos
+Para cada escenario se reporta la **media** y el rango `[mín – máx]` de los años que lo forman. Los años con datos incompletos se descartan.
 
-> Pendiente: no se registraron análogos. Cada fila debe tener una referencia verificable en `docs/referencias.md`.
+### 2.4 Contraste con otras fuentes NASA
 
-| ID | Región análoga | País | Rasgo climático | Rasgo edáfico | Estrategia evidenciada | Referencia |
-|---|---|---|---|---|---|---|
-| A1 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
-| A2 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
-| A3 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
-
-### 2.3 Transferencia de evidencia
-
-La evidencia no se copia: se **ajusta**. Para cada análoga se define un factor de transferencia que corrige las diferencias medibles con el piloto:
-
-```
-efecto_piloto = efecto_analogo × f_clima × f_suelo × f_cultivo
-```
-
-- `f_clima`: razón de índices de estrés hídrico (POWER/SMAP) entre piloto y análoga.
-- `f_suelo`: razón de capacidad de retención y materia orgánica entre piloto y análoga.
-- `f_cultivo`: ajuste por especie/variedad cuando el cultivo difiere.
-
-Cada efecto transferido se reporta **con un intervalo de incertidumbre** y con la lista de análogos que lo sustentan. Las reglas de decisión del backend usan estos intervalos, no valores puntuales.
-
-### 2.4 Cómo se valida
-
-- **Consistencia satelital:** las tendencias simuladas deben ser coherentes con el NDVI/EVI y la humedad de suelo observados en el piloto durante años secos y años normales.
-- **Análisis de sensibilidad:** se mide cuánto cambia el ranking de estrategias al variar los factores de transferencia.
-- **Transparencia:** el sistema muestra siempre qué análogos respaldan cada recomendación.
+- **NDVI (MODIS y Landsat/HLS):** el vigor de la vegetación observado en años secos y normales debe moverse en el mismo sentido que el estrés calculado.
+- **Humedad del suelo (SMAP):** referencia de la humedad real de la zona cuando su carga termina.
+- **Sensibilidad:** al cambiar los parámetros de la tabla 2.2 se ve si el orden de las estrategias se mantiene.
 
 ---
 
@@ -241,7 +228,6 @@ flowchart LR
 | `soil_profile` | Parámetros edáficos por zona. |
 | `crop` | maíz, frijol y parámetros de ciclo. |
 | `strategy` | Las 3 estrategias de rotación y su definición. |
-| `analog_region` | Regiones análogas y sus referencias. |
 | `strategy_result` | Resultado de cada estrategia por zona y escenario. |
 
 ---
@@ -279,14 +265,14 @@ TerraShift/
 ├── database/                   # Base de datos
 │   ├── init/                   # Scripts SQL de inicialización (esquema, PostGIS)
 │   ├── migrations/             # Migraciones versionadas
-│   └── seeds/                  # Datos semilla (cultivos, estrategias, análogos)
+│   └── seeds/                  # Datos semilla (cultivos y estrategias)
 │
 ├── data/                       # Datos locales (ignorado por git, salvo muestras)
 │   └── samples/
 │
 └── docs/                       # Documentación
     ├── manual-de-usuario.md    # Cómo usar la página, zonas y sus limitaciones
-    ├── metodologia.md          # Detalle de la metodología de análogos
+    ├── metodologia.md          # Detalle del método de balance hídrico
     ├── referencias.md          # Bibliografía y fuentes verificables
     ├── api/                    # Especificación OpenAPI
     ├── arquitectura/           # Decisiones de diseño
@@ -310,35 +296,26 @@ Las tres estrategias se evalúan con **los mismos indicadores y los mismos escen
 | | **E1 · Línea base tradicional** | **E2 · Conservación hídrica** | **E3 · Regeneración de suelos** |
 |---|---|---|---|
 | **Enfoque** | Práctica actual del productor. | Maximizar el aprovechamiento y retención de agua. | Recuperar materia orgánica y estructura del suelo. |
-| **Rotación / secuencia** | Maíz en primera (mayo–agosto) y frijol en postrera (septiembre–diciembre). | La misma secuencia, ajustando fechas de siembra a la lluvia observada. | Maíz y frijol alternados con una leguminosa de cobertura (abono verde) en el ciclo. |
-| **Prácticas clave** | Labranza convencional, suelo desnudo en la época seca, sin obras de conservación. | Labranza mínima, cobertura del suelo con rastrojo, barreras vivas o curvas a nivel, retención de agua. | Abonos verdes, aporte de materia orgánica (compost, estiércol), sin quema. |
-| **Cultivos involucrados** | Maíz, frijol | Maíz, frijol | Maíz, frijol y una leguminosa de cobertura |
-| **Análogos que la respaldan** | Pendiente | Pendiente | Pendiente |
+| **Rotación / secuencia** | Maíz en primera (mayo–agosto) y frijol en postrera (septiembre–diciembre). | La misma secuencia, con cobertura y obras de conservación. | Maíz y frijol alternados con una leguminosa de cobertura (abono verde). |
+| **Prácticas clave** | Labranza convencional, suelo desnudo en la época seca, sin obras de conservación. | Labranza mínima, cobertura del suelo con rastrojo, barreras vivas o curvas a nivel. | Abonos verdes, aporte de materia orgánica (compost, estiércol), sin quema. |
+| **Cómo entra en el modelo** | Escorrentía 0,15 · evaporación ×1,00 · agua útil ×1,00 | Escorrentía 0,08 · evaporación ×0,85 · agua útil ×1,00 | Escorrentía 0,12 · evaporación ×1,00 · agua útil ×1,10 |
 
-> Las rotaciones y prácticas son una **definición de trabajo** basada en prácticas ampliamente documentadas para el Corredor Seco. **No fueron validadas con productores ni con técnicos** ni se respaldan aún con análogos.
+> Las prácticas son una definición de trabajo basada en prácticas ampliamente documentadas para el Corredor Seco; sus efectos entran al modelo como los parámetros de la sección 2.2.
 
 ### 5.2 Matriz comparativa de resultados
 
-> **Pendiente.** El MVP no calcula esta matriz: requiere análogos y factores de transferencia (sección 2). Se muestra el diseño de indicadores para el trabajo futuro; cuando haya resultados se reportarán como `valor [mín – máx]` para reflejar la incertidumbre.
+La matriz se calcula con `python -m src.cli metrics --zone <zona>` a partir de la serie de NASA POWER de la zona, se guarda en la tabla `strategy_result` y se muestra en la página como una **tabla lado a lado** (cultivo × escenario × indicador, con la mejor estrategia de cada fila resaltada). Cada valor se reporta como media y rango `[mín – máx]`.
 
-| Indicador | Unidad | Fuente principal | E1 · Línea base | E2 · Conservación hídrica | E3 · Regeneración de suelos |
-|---|---|---|---|---|---|
-| Rendimiento esperado, año normal | t/ha | Análogos + POWER | — | — | — |
-| Rendimiento esperado, año seco | t/ha | Análogos + POWER + SMAP | — | — | — |
-| Variabilidad interanual del rendimiento | % | Escenarios | — | — | — |
-| Índice de estrés hídrico del cultivo | 0–1 | POWER + SMAP | — | — | — |
-| Humedad de suelo en zona de raíces (media del ciclo) | m³/m³ | SMAP | — | — | — |
-| Vigor de vegetación (NDVI pico) | 0–1 | Landsat / MODIS | — | — | — |
-| Cobertura del suelo en época seca | % | Landsat / MODIS | — | — | — |
-| Riesgo de pérdida de cosecha por sequía | % | Escenarios | — | — | — |
-| Tendencia de materia orgánica del suelo (5 años) | Δ % | Análogos | — | — | — |
-| Riesgo de erosión | bajo/medio/alto | Suelo + cobertura | — | — | — |
-| Costo de implementación | USD/ha | Análisis económico | — | — | — |
-| Plazo para ver beneficios | años | Análogos | — | — | — |
-| **Puntaje global de decisión** | 0–100 | Reglas del backend | — | — | — |
-| **Nivel de confianza** | alto/medio/bajo | Nº y calidad de análogos | — | — | — |
+| Indicador | Unidad | Fuente principal | Mejor es |
+|---|---|---|---|
+| Rendimiento relativo (% del potencial) | % | NASA POWER + balance hídrico | Mayor |
+| Índice de estrés hídrico | 0–1 | NASA POWER + balance hídrico | Menor |
+| Déficit de transpiración del ciclo | mm | NASA POWER + balance hídrico | Menor |
+| Lluvia efectiva del ciclo | mm | NASA POWER | Mayor |
 
-#### Lo que sí medimos hoy con datos NASA (zona piloto, sin distinguir estrategias)
+Cada indicador se calcula para **E1, E2 y E3**, para **maíz y frijol** y para los **tres escenarios** (72 valores por zona). Los números dependen de la zona y de la serie cargada, por eso se leen en la página y no se fijan en este documento.
+
+#### Datos NASA observados que acompañan la comparación (zona piloto)
 
 | Dato | Fuente | Dónde se ve |
 |---|---|---|
@@ -357,8 +334,7 @@ puntaje(E) = Σ  w_i × indicador_normalizado_i(E)
 ```
 
 - Los pesos `w_i` son **configurables** (por ejemplo: priorizar resiliencia a la sequía frente a costo).
-- Se reporta también el **nivel de confianza** según el número y la calidad de los análogos que respaldan la estrategia.
-- Pesos por defecto: pendiente. El puntaje global **no está implementado** en el MVP.
+- Pesos por defecto: pendiente. El puntaje global **no está implementado** en el MVP; la comparación se hace indicador por indicador (sección 5.2).
 
 ---
 
@@ -375,9 +351,8 @@ Prioridad: tener un **flujo completo de extremo a extremo** (aunque simple) lo a
 
 ### Fase 1 · Base de datos
 - [x] Contenedor PostgreSQL con extensión PostGIS habilitada
-- [x] Esquema inicial (`zone`, `climate_daily`, `soil_moisture`, `vegetation_index`, `soil_profile`, `crop`, `strategy`, `analog_region`, `strategy_result`)
+- [x] Esquema inicial (`zone`, `climate_daily`, `soil_moisture`, `vegetation_index`, `soil_profile`, `crop`, `strategy`, `strategy_result`)
 - [x] Datos semilla: cultivos y las 3 estrategias
-- [ ] Datos semilla: registro de análogos (no se realizó la investigación)
 - [x] Definir y cargar la geometría de la(s) zona(s) piloto
 
 ### Fase 2 · Motor analítico (Python)
@@ -386,30 +361,30 @@ Prioridad: tener un **flujo completo de extremo a extremo** (aunque simple) lo a
 - [x] Cliente de Landsat/MODIS (NDVI/EVI)
 - [x] Limpieza y agregación temporal/espacial
 - [x] Índices de sequía básicos (racha seca más larga, totales mensuales)
-- [ ] Índice de estrés hídrico del cultivo
+- [x] Índice de estrés hídrico del cultivo (balance hídrico FAO-56)
 - [x] Sincronización incremental diaria de las cuatro fuentes
-- [ ] Cálculo de métricas por estrategia con factores de transferencia (pendiente: requiere análogos)
+- [x] Cálculo de métricas de E1, E2 y E3 con datos de NASA POWER (`cli metrics`)
 - [x] Carga idempotente a PostgreSQL/PostGIS
 - [x] Pruebas unitarias de las métricas clave
 
 ### Fase 3 · Backend (Spring Boot)
 - [x] Proyecto base con conexión a PostgreSQL/PostGIS
 - [x] Entidades y repositorios
-- [ ] Motor de reglas: puntaje global y nivel de confianza (pendiente: requiere resultados por estrategia)
+- [ ] Motor de reglas: puntaje global ponderado
 - [x] Endpoints REST: zonas, series, estrategias, comparación
 - [x] Documentación OpenAPI/Swagger
 - [x] Pruebas de los endpoints principales
 
 ### Fase 4 · Visualización y demo
-- [x] Interfaz mínima que consuma la API (menú de zonas y tarjetas de las 3 estrategias; sin resultados hasta que existan)
+- [x] Interfaz mínima que consuma la API (menú de zonas, tabla comparativa de E1, E2 y E3 y tarjetas por estrategia)
 - [x] Panel de datos NASA con lectura en lenguaje sencillo y zonas propuestas desde el mapa
 - [x] Mapa de la zona elegida y para proponer zonas nuevas
 - [ ] Capa de índice de vegetación o humedad sobre el mapa
 - [ ] Gráficas comparativas por escenario (normal / seco / canícula)
-- [ ] Mostrar siempre los análogos y la incertidumbre detrás de cada resultado
+- [x] Mostrar el rango [mín – máx] y los supuestos detrás de cada resultado
 
 ### Fase 5 · Cierre y entrega
-- [ ] Rellenar la matriz de la sección 5 con los resultados finales
+- [ ] Ejecutar `cli metrics` en el servidor y revisar los resultados finales de la zona piloto
 - [ ] Completar `docs/referencias.md` con todas las fuentes
 - [ ] Capturas, diagramas finales y video/guion de la demo
 - [x] Revisar que el README refleje el estado real del proyecto
@@ -477,35 +452,33 @@ Esta sección separa lo que el proyecto **sí hace** de lo que **no hace**, y pa
 |---|---|---|
 | **Territorio** | Corredor Seco de Nicaragua, zona(s) piloto | Otros países o regiones húmedas |
 | **Cultivos** | maíz y frijol | Hortalizas, café, frutales, ganadería |
-| **Estrategias** | Las 3 estrategias de rotación definidas (sección 5) | Prácticas no incluidas en la investigación |
+| **Estrategias** | Las 3 estrategias de rotación definidas (sección 5) | Otras prácticas de manejo |
 | **Escala espacial** | Zona / municipio | Parcela individual |
-| **Datos** | NASA POWER, SMAP, Landsat/MODIS y parámetros edáficos | Datos de campo propios de productores |
-| **Resultado** | Comparación cuantitativa con incertidumbre | Recomendaciones agronómicas personalizadas o prescriptivas |
+| **Datos** | NASA POWER, SMAP y Landsat/MODIS | Datos de campo propios de productores |
+| **Resultado** | Comparación cuantitativa con rango [mín – máx] | Recomendaciones agronómicas personalizadas o prescriptivas |
 | **Usuarios** | Técnicos de extensión, productores asistidos y evaluadores | Uso comercial o certificación |
 
 ### 9.2 Limitaciones, impacto y mitigación
 
 | # | Limitación | Impacto en los resultados | Mitigación |
 |---|---|---|---|
-| L1 | No hay series históricas hiperlocales abiertas en Nicaragua | Los efectos de cada estrategia no se calibran con ensayos locales | Transferencia desde análogos con factores de ajuste (sección 2.3) |
-| L2 | La evidencia proviene de regiones análogas, no del piloto | Posible sesgo si la análoga difiere en rasgos no medidos | Criterios de selección explícitos y análisis de sensibilidad |
+| L1 | No hay series históricas hiperlocales abiertas en Nicaragua | El modelo no se calibra con ensayos locales | Se usan solo datos de la NASA, con métodos estándar de la FAO y supuestos a la vista |
+| L2 | Los efectos de manejo de E1, E2 y E3 son parámetros del modelo | Los resultados dependen de esos supuestos | Parámetros explícitos y ajustables (sección 2.2) para hacer análisis de sensibilidad |
 | L3 | SMAP tiene resolución gruesa (decenas de km) | No distingue diferencias entre parcelas vecinas | Trabajar a escala de zona y complementar con NDVI de Landsat/MODIS |
-| L4 | Los parámetros edáficos tienen cobertura y detalle limitados | Menor precisión en retención de agua y materia orgánica | Reportar rangos, no valores puntuales |
-| L5 | Los resultados son estimaciones, no mediciones | Pueden no reflejar un año o finca concreta | Intervalos de incertidumbre y nivel de confianza en cada resultado |
-| L6 | El tiempo del hackathon limita la validación | Validación parcial contra señal satelital | Priorizar validación de las métricas clave y documentar lo pendiente |
-| L7 | No se realizó la investigación de análogos | **No hay comparación cuantitativa de E1, E2 y E3**; las tarjetas salen sin resultados | Mostrar datos observados reales de la NASA y declarar la comparación como trabajo futuro |
-| L8 | Las colas de AppEEARS son largas | La primera descarga de SMAP, MODIS y Landsat tarda horas y se acotó a lo reciente | Sincronización incremental que reutiliza tareas ya enviadas y se reintenta cada día |
-| L9 | Cada zona se descarga como un rectángulo | No se pueden delimitar terrenos de forma irregular | Dibujar el rectángulo que contenga el terreno; se explica en el manual de usuario |
+| L4 | El suelo se representa con un valor genérico (franco, 0,15 m³/m³ de agua útil) | Menor precisión en retención de agua de la zona | Reportar rangos y permitir ajustar el parámetro |
+| L5 | Los resultados son estimaciones, no mediciones | Pueden no reflejar un año o finca concreta | Rango [mín – máx] en cada resultado |
+| L6 | La serie de NASA POWER cubre pocos años | Cada escenario se arma con pocos años (3) | Se reporta el rango de los años y se contrasta con NDVI/SMAP |
+| L7 | Las colas de AppEEARS son largas | La primera descarga de SMAP, MODIS y Landsat tarda horas y se acotó a lo reciente | Sincronización incremental que reutiliza tareas ya enviadas y se reintenta cada día |
+| L8 | Cada zona se descarga como un rectángulo | No se pueden delimitar terrenos de forma irregular | Dibujar el rectángulo que contenga el terreno; se explica en el manual de usuario |
 
 ### 9.3 Uso responsable
 
 - TerraShift es una herramienta de **apoyo a la decisión**, no sustituye la asesoría de un técnico agrónomo.
-- Toda recomendación muestra los análogos y la incertidumbre que la respaldan.
+- Todo resultado muestra su rango y los supuestos que lo producen.
 
 ### 9.4 Trabajo futuro
 
-- Completar la investigación: registro de análogos, factores de transferencia y escenarios, y con ellos la matriz de la sección 5.
-- Incorporar datos de campo de productores.
+- Incorporar datos de campo de productores y calibrar los parámetros de manejo.
 - Validar con ensayos locales en el Corredor Seco.
 - Ampliar a otros cultivos y países de la región.
 

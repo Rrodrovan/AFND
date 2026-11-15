@@ -1,13 +1,14 @@
 # Referencias
 
-Registrar aquí **solo fuentes verificadas** (con enlace o DOI). Cada fila del registro de análogos
-del README debe poder rastrearse hasta una referencia de esta lista.
+Registrar aquí **solo fuentes verificadas** (con enlace o DOI). Cada método del README debe poder rastrearse hasta una referencia de esta lista.
 
 ## Estudios y evidencia científica
 
 | ID | Autores | Año | Título | Revista / editorial | Enlace o DOI | Usado en |
 |---|---|---|---|---|---|---|
-| — | Pendiente: no se registraron estudios porque la investigación de análogos no se realizó | | | | | |
+| R1 | Allen, R. G.; Pereira, L. S.; Raes, D.; Smith, M. | 1998 | Crop evapotranspiration: guidelines for computing crop water requirements (FAO Irrigation and Drainage Paper 56) | FAO | https://www.fao.org/4/x0490e/x0490e00.htm | Radiación extraterrestre, Kc/Kcb, balance de agua del suelo y estrés (secciones 2.1 y 3) |
+| R2 | Doorenbos, J.; Kassam, A. H. | 1979 | Yield response to water (FAO Irrigation and Drainage Paper 33) | FAO | https://www.fao.org/4/i2800e/i2800e00.htm | Función de rendimiento relativo y valores de Ky |
+| R3 | Hargreaves, G. H.; Samani, Z. A. | 1985 | Reference crop evapotranspiration from temperature | Applied Engineering in Agriculture 1(2): 96–99 | https://doi.org/10.13031/2013.26773 | ET0 a partir de temperatura máxima, mínima y radiación extraterrestre |
 
 ## Fuentes de datos
 
