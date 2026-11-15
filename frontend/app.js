@@ -274,6 +274,7 @@
     (data.strategies || []).forEach(function (item) {
       var s = item.strategy;
       var card = el("article", "card");
+      card.dataset.code = s.code;
       card.appendChild(el("span", "card__code", s.code));
       card.appendChild(el("h2", "card__title", s.name));
       card.appendChild(el("p", "card__focus", s.focus));
