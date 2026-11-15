@@ -12,6 +12,10 @@
   var resultsEl = document.getElementById("results");
   var buttonEl = form.querySelector("button");
 
+  var SCENARIO_ORDER = { normal: 0, seco: 1, canicula: 2 };
+  // Nombre corto del indicador (sin la aclaración entre paréntesis).
+  function shortName(name) { return String(name).replace(/\s*\(.*$/, ""); }
+
   function el(tag, className, text) {
     var node = document.createElement(tag);
     if (className) node.className = className;
@@ -85,6 +89,7 @@
     for (var i = 0; i < table.tHead.rows[0].cells.length; i++) heads.push(table.tHead.rows[0].cells[i].textContent);
     for (var b = 0; b < table.tBodies.length; b++) {
       for (var r = 0; r < table.tBodies[b].rows.length; r++) {
+        if (table.tBodies[b].rows[r].className === "group") continue;
         var cells = table.tBodies[b].rows[r].cells;
         for (var c = 0; c < cells.length; c++) cells[c].setAttribute("data-label", heads[c] || "");
       }
@@ -149,27 +154,36 @@
     if (!indicators || indicators.length === 0) {
       return el("p", "empty", "Sin resultados calculados todavía para esta estrategia.");
     }
-    var table = el("table", "indicators");
-    var head = table.createTHead().insertRow();
-    ["Cultivo", "Escenario", "Indicador", "Valor [mín – máx]"].forEach(function (h) {
-      var th = document.createElement("th");
-      th.scope = "col";
-      th.textContent = h;
-      head.appendChild(th);
-    });
-    var body = table.createTBody();
+    // Una lista por cultivo y escenario: se adapta al ancho de la tarjeta, sin tabla de varias columnas.
+    var box = el("div", "card__groups");
+    var groups = {};
+    var order = [];
     indicators.forEach(function (ind) {
-      var row = body.insertRow();
-      [ind.crop, SCENARIOS[ind.scenario] || ind.scenario, ind.indicator, fmtValue(ind)].forEach(function (text) {
-        row.insertCell().textContent = text;
-      });
+      var key = ind.crop + "|" + ind.scenario;
+      if (!groups[key]) { groups[key] = { crop: ind.crop, scenario: ind.scenario, items: [] }; order.push(key); }
+      groups[key].items.push(ind);
     });
-    labelCells(table);
-    return table;
+    order.sort(function (x, y) {
+      var a = groups[x], b = groups[y];
+      if (a.crop !== b.crop) return a.crop < b.crop ? -1 : 1;
+      return SCENARIO_ORDER[a.scenario] - SCENARIO_ORDER[b.scenario];
+    });
+    order.forEach(function (key) {
+      var g = groups[key];
+      box.appendChild(el("h4", "card__group", g.crop + " · " + (SCENARIOS[g.scenario] || g.scenario)));
+      var list = el("ul", "card__metrics");
+      g.items.forEach(function (ind) {
+        var li = el("li");
+        li.appendChild(el("span", "card__metric-name", shortName(ind.indicator)));
+        li.appendChild(el("strong", "card__metric-value", fmtValue(ind)));
+        list.appendChild(li);
+      });
+      box.appendChild(list);
+    });
+    return box;
   }
 
   // Tabla lado a lado: una fila por cultivo, escenario e indicador; una columna por estrategia.
-  var SCENARIO_ORDER = { normal: 0, seco: 1, canicula: 2 };
   function higherIsBetter(name) { return /^(Rendimiento|Lluvia efectiva)/.test(name); }
 
   function renderComparison(strategies) {
@@ -196,19 +210,31 @@
     });
 
     var head = table.createTHead().insertRow();
-    ["Cultivo", "Escenario", "Indicador"].concat(codes).forEach(function (h) {
+    ["Indicador"].concat(codes).forEach(function (h) {
       var th = document.createElement("th");
       th.scope = "col";
       th.textContent = h;
       head.appendChild(th);
     });
     var body = table.createTBody();
+    var lastGroup = null;
     order.forEach(function (key) {
       var r = rows[key];
+      var group = r.ind.crop + " · " + (SCENARIOS[r.ind.scenario] || r.ind.scenario);
+      if (group !== lastGroup) {
+        var gRow = body.insertRow();
+        gRow.className = "group";
+        var gCell = document.createElement("th");
+        gCell.colSpan = codes.length + 1;
+        gCell.scope = "colgroup";
+        gCell.textContent = group;
+        gRow.appendChild(gCell);
+        lastGroup = group;
+      }
       var row = body.insertRow();
-      [r.ind.crop, SCENARIOS[r.ind.scenario] || r.ind.scenario, r.ind.indicator].forEach(function (text) {
-        row.insertCell().textContent = text;
-      });
+      var nameCell = row.insertCell();
+      nameCell.textContent = shortName(r.ind.indicator);
+      nameCell.title = r.ind.indicator;
       var best = null;
       codes.forEach(function (c) {
         var v = r.values[c] && r.values[c].value;

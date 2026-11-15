@@ -156,3 +156,19 @@ body {
   .indicators td::before { content: attr(data-label); flex: 0 0 38%; text-align: left; font-weight: 600; color: var(--muted); }
   .indicators td.best { background: #e9f3ec; padding-inline: 0.4rem; margin-inline: -0.4rem; width: calc(100% + 0.8rem); }
 }
+
+/* Tabla comparativa agrupada y tarjetas por estrategia */
+.indicators tr.group th { padding-top: 0.9rem; font-size: 0.95rem; color: var(--green-900); background: #f4f1e6; border-bottom: 1px solid var(--sand-200); }
+.indicators td:first-child { width: 34%; }
+.card { min-width: 0; }
+.card__groups { margin-top: 0.5rem; }
+.card__group { margin: 0.9rem 0 0.25rem; font-size: 0.95rem; color: var(--green-900); }
+.card__metrics { list-style: none; margin: 0; padding: 0; }
+.card__metrics li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.15rem 0.75rem; padding: 0.35rem 0; border-bottom: 1px dashed var(--sand-200); font-size: 0.9rem; }
+.card__metric-name { color: var(--muted); }
+.card__metric-value { margin-left: auto; text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+  .indicators tr.group { padding: 0; margin: 0.75rem 0 0.25rem; background: transparent; border: 0; }
+  .indicators tr.group th { display: block; width: 100%; padding: 0.4rem 0.6rem; border-radius: 6px; }
+  .indicators td:first-child { width: 100%; }
+}
