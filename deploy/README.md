@@ -48,7 +48,7 @@ cd ~/AFND && git pull
 sudo bash -c 'set -a; . /etc/terrashift-etl.env; set +a; PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f database/init/04_zone_requests.sql'
 
 # 2. Token de administrador (se genera uno y se guarda en el archivo del backend)
-grep -q TERRASHIFT_ADMIN_TOKEN /etc/terrashift.env || echo "TERRASHIFT_ADMIN_TOKEN=$(openssl rand -hex 24)" | sudo tee -a /etc/terrashift.env >/dev/null
+sudo grep -q TERRASHIFT_ADMIN_TOKEN /etc/terrashift.env || echo "TERRASHIFT_ADMIN_TOKEN=$(openssl rand -hex 24)" | sudo tee -a /etc/terrashift.env >/dev/null
 sudo grep TERRASHIFT_ADMIN_TOKEN /etc/terrashift.env     # ese es el token que pegas en admin.html; no lo compartas
 
 # 3. Nginx: debe pasar la IP real del visitante
@@ -64,3 +64,15 @@ cd .. && bash deploy/setup-sync.sh      # vuelve a instalar el servicio (ahora s
 
 Revisar solicitudes: abre `https://rrodrovan.github.io/AFND/admin.html`, pega el token y aprueba o rechaza.
 Después de aprobar, la descarga empieza en la siguiente sincronización (o ya: `sudo systemctl start terrashift-sync.service --no-block`).
+
+### Si el backend no arranca (502 Bad Gateway)
+
+Tras reiniciar, Spring tarda entre 10 y 40 segundos en responder; Nginx da 502 mientras tanto. Si persiste:
+
+```bash
+systemctl is-active terrashift
+sudo journalctl -u terrashift -n 60 --no-pager     # la causa suele estar en las últimas líneas
+```
+
+Si por error se agregó más de un `TERRASHIFT_ADMIN_TOKEN` a `/etc/terrashift.env`, vale el último. Para ver cuál es sin mostrar los demás:
+`sudo grep TERRASHIFT_ADMIN_TOKEN /etc/terrashift.env | tail -1`.
