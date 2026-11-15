@@ -1,0 +1,18 @@
+{
+  "zone": "piloto",
+  "strategies": [
+    {
+      "strategy": { "id": 1, "code": "E1", "name": "Línea base tradicional", "focus": "Práctica actual del productor." },
+      "indicators": []
+    },
+    {
+      "strategy": { "id": 2, "code": "E2", "name": "Conservación hídrica", "focus": "Maximizar el aprovechamiento y la retención de agua." },
+      "indicators": []
+    },
+    {
+      "strategy": { "id": 3, "code": "E3", "name": "Regeneración de suelos", "focus": "Recuperar materia orgánica y estructura del suelo." },
+      "indicators": []
+    }
+  ],
+  "note": "Copia de respaldo: muestra las estrategias definidas, pero aún sin resultados calculados. Los valores aparecerán aquí cuando se actualice esta copia desde el servidor."
+}
