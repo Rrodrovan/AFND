@@ -257,6 +257,7 @@ TerraShift/
 │   └── samples/
 │
 └── docs/                       # Documentación
+    ├── manual-de-usuario.md    # Cómo usar la página, zonas y sus limitaciones
     ├── metodologia.md          # Detalle de la metodología de análogos
     ├── referencias.md          # Bibliografía y fuentes verificables
     ├── api/                    # Especificación OpenAPI
