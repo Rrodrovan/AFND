@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "descripcion": "Reglas condicionales que explican en lenguaje sencillo los resultados de E1, E2 y E3, las tendencias y proyecciones calculadas con las series de la NASA, y las recomendaciones que se derivan. Cada regla tiene una condición ('cuando') sobre hechos calculados y un texto con marcadores {hecho:decimales|escala}. Si falta un dato, la regla no se muestra. Se puede editar sin tocar el código. Las proyecciones son extrapolaciones del historial observado, no pronósticos del tiempo.",
   "nombres": {
     "E1": "la práctica tradicional (E1)",
@@ -75,6 +75,190 @@
       }
     ]
   },
+  "resumen_breve": [
+    {
+      "id": "linea-resultados",
+      "variantes": [
+        {
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E1"
+              }
+            ]
+          },
+          "texto": "Con datos de la NASA, la práctica tradicional rinde igual o más que las alternativas: el manejo casi no cambia el rendimiento en esta zona."
+        },
+        {
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "global.n_mejor",
+                "op": ">=",
+                "valor": 1
+              },
+              {
+                "hecho": "global.gap_max",
+                "op": ">=",
+                "valor": 1
+              }
+            ]
+          },
+          "texto": "Con datos de la NASA, {global.mejor|nombres} rinde mejor en {global.n_mejor} de {global.n_total} casos; la mayor ventaja sobre la práctica tradicional es de +{global.gap_max:1} puntos."
+        },
+        {
+          "cuando": {
+            "hecho": "global.n_total",
+            "op": ">=",
+            "valor": 1
+          },
+          "texto": "Con datos de la NASA, las tres estrategias dan resultados casi iguales: el tipo de año pesa más que el manejo."
+        }
+      ]
+    },
+    {
+      "id": "linea-riesgo",
+      "variantes": [
+        {
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "alto"
+              },
+              {
+                "hecho": "maiz.E1.caida_seco",
+                "op": ">=",
+                "valor": 5
+              }
+            ]
+          },
+          "texto": "La tendencia de la zona muestra riesgo alto ({zona.riesgo_puntos} de {zona.riesgo_senales} señales de alerta) y un año seco baja el maíz {maiz.E1.caida_seco:0} puntos con la práctica tradicional."
+        },
+        {
+          "cuando": {
+            "hecho": "zona.riesgo",
+            "op": "==",
+            "valor": "alto"
+          },
+          "texto": "La tendencia de la zona muestra riesgo alto: se cumplen {zona.riesgo_puntos} de {zona.riesgo_senales} señales de alerta (menos lluvia, más calor o canícula frecuente)."
+        },
+        {
+          "cuando": {
+            "hecho": "zona.riesgo",
+            "op": "==",
+            "valor": "medio"
+          },
+          "texto": "La tendencia de la zona muestra riesgo medio ({zona.riesgo_puntos} de {zona.riesgo_senales} señales): conviene vigilar la lluvia de julio y agosto."
+        },
+        {
+          "cuando": {
+            "hecho": "zona.riesgo",
+            "op": "==",
+            "valor": "bajo"
+          },
+          "texto": "La tendencia de la zona muestra riesgo bajo por ahora, aunque la lluvia varía mucho de un año a otro."
+        },
+        {
+          "cuando": {
+            "hecho": "maiz.E1.caida_seco",
+            "op": ">=",
+            "valor": 5
+          },
+          "texto": "Un año seco baja el maíz {maiz.E1.caida_seco:0} puntos con la práctica tradicional; aún no hay años suficientes para estimar tendencias."
+        }
+      ]
+    },
+    {
+      "id": "linea-recomendacion",
+      "variantes": [
+        {
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "alto"
+              },
+              {
+                "alguna": [
+                  {
+                    "hecho": "global.mejor",
+                    "op": "==",
+                    "valor": "E2"
+                  },
+                  {
+                    "hecho": "global.mejor",
+                    "op": "==",
+                    "valor": "E2_E3"
+                  }
+                ]
+              }
+            ]
+          },
+          "texto": "Recomendación: priorice conservar el agua (barreras, curvas a nivel, rastrojo) antes de la próxima época seca, con asesoría de un técnico."
+        },
+        {
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "alto"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E3"
+              }
+            ]
+          },
+          "texto": "Recomendación: empiece ya a recuperar el suelo (abonos verdes, compost) y consulte a un técnico para planificarlo."
+        },
+        {
+          "cuando": {
+            "hecho": "zona.riesgo",
+            "op": "==",
+            "valor": "alto"
+          },
+          "texto": "Recomendación: mantenga el suelo cubierto, reparta las fechas de siembra y consulte a un técnico antes de cambiar prácticas."
+        },
+        {
+          "cuando": {
+            "alguna": [
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E2"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E2_E3"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E3"
+              }
+            ]
+          },
+          "texto": "Recomendación: pruebe primero las prácticas de la estrategia que mejor rinde en una parte del terreno y consulte a un técnico."
+        },
+        {
+          "cuando": {
+            "hecho": "global.n_total",
+            "op": ">=",
+            "valor": 1
+          },
+          "texto": "Recomendación: decida por costo y mano de obra, mantenga el suelo cubierto y consulte a un técnico agrónomo."
+        }
+      ]
+    }
+  ],
   "secciones": [
     {
       "id": "resumen",
