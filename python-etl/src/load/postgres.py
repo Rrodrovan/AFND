@@ -194,3 +194,38 @@ def finish_run(
             (status, rows_loaded, last_data_date, (error or "")[:2000] or None, run_id),
         )
     conn.commit()
+
+
+def load_climate_for_metrics(conn: psycopg.Connection, zone_id: int) -> list[dict[str, Any]]:
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT date, precip_mm, t2m_max_c, t2m_min_c FROM climate_daily WHERE zone_id = %s ORDER BY date",
+            (zone_id,),
+        )
+        return [
+            {"date": r[0], "precip_mm": r[1], "t2m_max_c": r[2], "t2m_min_c": r[3]} for r in cur.fetchall()
+        ]
+
+
+def replace_strategy_results(conn: psycopg.Connection, zone_id: int, rows: list[dict[str, Any]]) -> int:
+    """Reemplaza los resultados de una zona (borra los anteriores, incluidos datos de prueba) en una transacción."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT code, id FROM strategy")
+        strategy_ids = dict(cur.fetchall())
+        cur.execute("SELECT code, id FROM crop")
+        crop_ids = dict(cur.fetchall())
+        cur.execute("DELETE FROM strategy_result WHERE zone_id = %s", (zone_id,))
+        for r in rows:
+            cur.execute(
+                """
+                INSERT INTO strategy_result
+                    (zone_id, strategy_id, crop_id, scenario, indicator, value_mid, value_min, value_max, unit)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    zone_id, strategy_ids[r["strategy"]], crop_ids[r["crop"]], r["scenario"],
+                    r["indicator"], r["value_mid"], r["value_min"], r["value_max"], r["unit"],
+                ),
+            )
+    conn.commit()
+    return len(rows)
