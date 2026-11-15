@@ -144,3 +144,15 @@ body {
 .interpretation__list { margin: 0; padding-left: 1.2rem; }
 .interpretation__list li { margin: 0.5rem 0; line-height: 1.55; }
 .interpretation__why { display: block; margin-top: 0.15rem; font-size: 0.8rem; color: #6a6657; }
+
+/* Tablas en pantallas angostas: cada fila pasa a ser una tarjeta con "título: valor". */
+@media (max-width: 720px) {
+  .table-wrap { overflow-x: visible; }
+  .indicators, .indicators tbody, .indicators tr, .indicators td { display: block; width: 100%; }
+  .indicators thead { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+  .indicators tr { margin: 0 0 0.75rem; padding: 0.2rem 0.6rem; background: #fff; border: 1px solid var(--sand-200); border-radius: 8px; }
+  .indicators td { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.4rem 0; border-bottom: 1px dashed var(--sand-200); text-align: right; overflow-wrap: anywhere; }
+  .indicators td:last-child { border-bottom: 0; }
+  .indicators td::before { content: attr(data-label); flex: 0 0 38%; text-align: left; font-weight: 600; color: var(--muted); }
+  .indicators td.best { background: #e9f3ec; padding-inline: 0.4rem; margin-inline: -0.4rem; width: calc(100% + 0.8rem); }
+}

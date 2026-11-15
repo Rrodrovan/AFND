@@ -63,7 +63,11 @@
         gapMax = Math.max(gapMax, gap);
         var best;
         var top = Math.max(r.E1, r.E2, r.E3);
-        if (gap < NO_GAP) {
+        var topAlt = Math.max(r.E2, r.E3);
+        if (gap < NO_GAP && r.E1 - topAlt >= NO_GAP) {
+          best = "E1";
+          counts.E1++;
+        } else if (gap < NO_GAP) {
           best = "ninguna";
         } else if (Math.abs(r.E2 - r.E3) < TIE && Math.min(r.E2, r.E3) > r.E1) {
           best = "E2_E3";
@@ -118,39 +122,160 @@
     }
   }
 
+  var MONTH_NAMES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+  function mean(a) { return a.reduce(function (s, v) { return s + v; }, 0) / a.length; }
+
+  // Compara el promedio de los 3 últimos valores con el de los anteriores (en %). Necesita 6 valores o más.
+  function recentVsEarlier(values) {
+    if (values.length < 6) return null;
+    var earlier = mean(values.slice(0, -3));
+    if (!(earlier > 0)) return null;
+    return (mean(values.slice(-3)) / earlier - 1) * 100;
+  }
+
+  // Quita el mes en curso: su promedio con pocos días no es comparable con los meses completos.
+  function completeMonths(months, today) {
+    var now = today || new Date();
+    var cutoff = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+    return (months || []).filter(function (m) { return m.month.slice(0, 7) < cutoff; });
+  }
+
+  function groupByYear(months, field) {
+    var years = {};
+    months.forEach(function (m) {
+      if (!isNum(m[field])) return;
+      var y = m.month.slice(0, 4);
+      (years[y] = years[y] || {})[Number(m.month.slice(5, 7))] = m[field];
+    });
+    return years;
+  }
+
   function monthFacts(months, facts) {
     months = months || [];
+    var rainBy = groupByYear(months, "precipMmTotal");
+    var tempBy = groupByYear(months, "t2mMeanC");
+    var key = months.some(function (m) { return isNum(m.ndviModisMean); }) ? "ndviModisMean" : "ndviLandsatMean";
+    var ndviBy = groupByYear(months, key);
+    var count = function (o) { return Object.keys(o).length; };
+    var yearsOf = function (by, min) {
+      return Object.keys(by).sort().filter(function (y) { return count(by[y]) >= min; });
+    };
+
+    // --- último año de lluvia (12 meses con datos)
     var rain = months.filter(function (m) { return isNum(m.precipMmTotal); }).slice(-12);
     if (rain.length >= 6) {
       facts["zona.meses_lluvia"] = rain.length;
       facts["zona.lluvia12"] = rain.reduce(function (s, m) { return s + m.precipMmTotal; }, 0);
       facts["zona.meses_secos"] = rain.filter(function (m) { return m.precipMmTotal < DRY_MONTH_MM; }).length;
     }
-    var idx = {};
-    months.forEach(function (m) { idx[m.month.slice(0, 7)] = m; });
-    var years = {};
-    months.forEach(function (m) { years[m.month.slice(0, 4)] = true; });
+
+    // --- canícula observada: julio-agosto frente a junio y septiembre
     var evaluated = 0;
     var canicula = 0;
-    Object.keys(years).forEach(function (y) {
-      var get = function (mm) { var m = idx[y + "-" + mm]; return m && isNum(m.precipMmTotal) ? m.precipMmTotal : null; };
-      var v = [get("06"), get("07"), get("08"), get("09")];
-      if (v.some(function (x) { return x === null; })) return;
+    var flags = [];
+    Object.keys(rainBy).sort().forEach(function (y) {
+      var r = rainBy[y];
+      if (![6, 7, 8, 9].every(function (m) { return isNum(r[m]); })) return;
       evaluated++;
-      if (Math.min(v[1], v[2]) < CANICULA_RATIO * (v[0] + v[3]) / 2) canicula++;
+      var hit = Math.min(r[7], r[8]) < CANICULA_RATIO * (r[6] + r[9]) / 2;
+      flags.push(hit ? 1 : 0);
+      if (hit) canicula++;
     });
     if (evaluated > 0) {
       facts["zona.anios_evaluados"] = evaluated;
       facts["zona.canicula_anios"] = canicula;
+      facts["zona.canicula_frec"] = canicula / evaluated * 100;
+      if (evaluated >= 4) facts["zona.canicula_recientes"] = flags.slice(-3).reduce(function (s, v) { return s + v; }, 0);
     }
-    if (months.length) facts["zona.smap"] = months.some(function (m) { return isNum(m.rootzoneM3m3Mean) || isNum(m.surfaceM3m3Mean); }) ? 1 : 0;
 
-    var key = months.some(function (m) { return isNum(m.ndviModisMean); }) ? "ndviModisMean" : "ndviLandsatMean";
-    var valid = months.filter(function (m) { return isNum(m[key]); });
-    if (valid.length) {
-      var last = valid[valid.length - 1];
-      var prev = idx[(Number(last.month.slice(0, 4)) - 1) + last.month.slice(4, 7)];
+    // --- humedad del suelo (SMAP)
+    var smapVals = months.filter(function (m) { return isNum(m.rootzoneM3m3Mean); });
+    if (months.length) facts["zona.smap"] = (smapVals.length || months.some(function (m) { return isNum(m.surfaceM3m3Mean); })) ? 1 : 0;
+    if (smapVals.length >= 2) facts["zona.smap_reciente"] = mean(smapVals.slice(-3).map(function (m) { return m.rootzoneM3m3Mean; }));
+
+    // --- vigor frente al mismo mes del año anterior
+    var withNdvi = months.filter(function (m) { return isNum(m[key]); });
+    if (withNdvi.length) {
+      var last = withNdvi[withNdvi.length - 1];
+      var prevYear = (Number(last.month.slice(0, 4)) - 1) + last.month.slice(4, 7);
+      var prev = months.filter(function (m) { return m.month.slice(0, 7) === prevYear; })[0];
       if (prev && isNum(prev[key]) && prev[key] > 0) facts["zona.ndvi_cambio"] = (last[key] / prev[key] - 1) * 100;
+    }
+
+    // --- tendencias: últimos 3 años frente a los anteriores
+    var fullRain = yearsOf(rainBy, 12);
+    var annual = fullRain.map(function (y) { return Object.keys(rainBy[y]).reduce(function (s, m) { return s + rainBy[y][m]; }, 0); });
+    facts["zona.anios_completos"] = fullRain.length;
+    var trendRain = recentVsEarlier(annual);
+    if (trendRain !== null) facts["zona.lluvia_tendencia"] = trendRain;
+
+    var julAug = Object.keys(rainBy).sort().filter(function (y) { return isNum(rainBy[y][7]) && isNum(rainBy[y][8]); })
+      .map(function (y) { return rainBy[y][7] + rainBy[y][8]; });
+    var trendJA = recentVsEarlier(julAug);
+    if (trendJA !== null) facts["zona.julago_tendencia"] = trendJA;
+
+    var fullTemp = yearsOf(tempBy, 12);
+    if (fullTemp.length >= 6) {
+      var tAnnual = fullTemp.map(function (y) { return mean(Object.keys(tempBy[y]).map(function (m) { return tempBy[y][m]; })); });
+      facts["zona.temp_tendencia"] = mean(tAnnual.slice(-3)) - mean(tAnnual.slice(0, -3));
+    }
+
+    var ndviYears = yearsOf(ndviBy, 10);
+    var nAnnual = ndviYears.map(function (y) { return mean(Object.keys(ndviBy[y]).map(function (m) { return ndviBy[y][m]; })); });
+    var trendNdvi = recentVsEarlier(nAnnual);
+    if (trendNdvi !== null) facts["zona.ndvi_tendencia"] = trendNdvi;
+
+    // --- proyección lineal de la lluvia anual (solo si hay 6 años completos), limitada al rango observado
+    if (annual.length >= 6) {
+      var n = annual.length;
+      var xs = annual.map(function (_, k) { return k; });
+      var mx = mean(xs), my = mean(annual);
+      var sxy = 0, sxx = 0;
+      xs.forEach(function (x, k) { sxy += (x - mx) * (annual[k] - my); sxx += (x - mx) * (x - mx); });
+      var slope = sxx > 0 ? sxy / sxx : 0;
+      var pred = my + slope * (n - mx);
+      pred = Math.max(Math.min.apply(null, annual), Math.min(Math.max.apply(null, annual), pred));
+      facts["zona.lluvia_media_anual"] = my;
+      facts["zona.proy_lluvia_anual"] = pred;
+      facts["zona.proy_vs_media"] = (pred / my - 1) * 100;
+      var dryYears = annual.filter(function (v) { return v < 0.85 * my; }).length;
+      facts["zona.anios_secos_frec"] = dryYears / n * 100;
+    }
+
+    // --- próximos tres meses según el historial de esos mismos meses
+    var lastRain = months.filter(function (m) { return isNum(m.precipMmTotal); });
+    if (lastRain.length) {
+      var lm = lastRain[lastRain.length - 1];
+      var next = [1, 2, 3].map(function (k) { return ((Number(lm.month.slice(5, 7)) - 1 + k) % 12) + 1; });
+      var sums = [], dryShare = [], ok = true;
+      next.forEach(function (mo) {
+        var vals = Object.keys(rainBy).map(function (y) { return rainBy[y][mo]; }).filter(isNum);
+        if (vals.length < 3) { ok = false; return; }
+        sums.push(mean(vals));
+        dryShare.push(vals.filter(function (v) { return v < DRY_MONTH_MM; }).length / vals.length * 100);
+      });
+      if (ok) {
+        facts["zona.prox_meses"] = MONTH_NAMES[next[0] - 1] + ", " + MONTH_NAMES[next[1] - 1] + " y " + MONTH_NAMES[next[2] - 1];
+        facts["zona.proy_lluvia_3m"] = sums.reduce(function (s, v) { return s + v; }, 0);
+        facts["zona.prox_prob_seco"] = mean(dryShare);
+      }
+    }
+
+    // --- perspectiva: cuántas señales de riesgo se cumplen (al menos 3 deben poder evaluarse)
+    var signals = [
+      ["zona.lluvia_tendencia", function (v) { return v <= -10; }],
+      ["zona.julago_tendencia", function (v) { return v <= -15; }],
+      ["zona.temp_tendencia", function (v) { return v >= 0.4; }],
+      ["zona.canicula_recientes", function (v) { return v >= 2; }],
+      ["zona.ndvi_tendencia", function (v) { return v <= -5; }]
+    ];
+    var evaluable = signals.filter(function (s) { return isNum(facts[s[0]]); });
+    if (evaluable.length >= 3) {
+      var points = evaluable.filter(function (s) { return s[1](facts[s[0]]); }).length;
+      facts["zona.riesgo_puntos"] = points;
+      facts["zona.riesgo_senales"] = evaluable.length;
+      facts["zona.riesgo"] = points >= 3 ? "alto" : (points === 2 ? "medio" : "bajo");
     }
   }
 
@@ -200,6 +325,7 @@
     var out = template.replace(/\{([\w.]+)(?::(\d))?(?:\|(\w+))?\}/g, function (_, name, dec, kind) {
       var v = facts[name];
       if (v === undefined || v === null) { missing = true; return ""; }
+      if (kind === "abs" && typeof v === "number") return Math.abs(v).toFixed(dec === undefined ? 0 : Number(dec)).replace(".", ",");
       if (kind) {
         if (typeof v === "number") {
           var scale = rules.escalas && rules.escalas[kind];
@@ -231,8 +357,8 @@
   }
 
   // Resultado: [{ id, titulo, items: [{ id, texto, criterio }] }] solo con secciones que tengan algo que decir.
-  function build(rules, strategies, months) {
-    var facts = buildFacts(strategies, months);
+  function build(rules, strategies, months, today) {
+    var facts = buildFacts(strategies, completeMonths(months, today));
     var sections = [];
     ((rules && rules.secciones) || []).forEach(function (sec) {
       var items = [];
@@ -259,6 +385,6 @@
     return cache;
   }
 
-  root.TerraShiftInterpretation = { build: build, buildFacts: buildFacts, evalCond: evalCond, renderText: renderText, load: load };
+  root.TerraShiftInterpretation = { completeMonths: completeMonths, build: build, buildFacts: buildFacts, evalCond: evalCond, renderText: renderText, load: load };
   if (typeof module !== "undefined" && module.exports) module.exports = root.TerraShiftInterpretation;
 })(typeof window !== "undefined" ? window : this);

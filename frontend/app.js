@@ -78,6 +78,19 @@
     return behind !== null && behind > limit ? badge("late", "Atrasada") : badge("ok", "Al día");
   }
 
+  // Etiqueta cada celda con el título de su columna: en pantallas angostas la tabla se muestra como tarjetas.
+  function labelCells(table) {
+    if (!table.tHead || !table.tHead.rows.length) return;
+    var heads = [];
+    for (var i = 0; i < table.tHead.rows[0].cells.length; i++) heads.push(table.tHead.rows[0].cells[i].textContent);
+    for (var b = 0; b < table.tBodies.length; b++) {
+      for (var r = 0; r < table.tBodies[b].rows.length; r++) {
+        var cells = table.tBodies[b].rows[r].cells;
+        for (var c = 0; c < cells.length; c++) cells[c].setAttribute("data-label", heads[c] || "");
+      }
+    }
+  }
+
   function renderNasaPanel(obs) {
     var panel = document.getElementById("nasa-panel");
     if (!obs || !obs.status || !obs.status.sources || obs.status.sources.length === 0) {
@@ -108,7 +121,10 @@
     var charts = document.getElementById("nasa-charts");
     charts.replaceChildren();
     var C = window.TerraShiftCharts;
-    var months = (obs.monthly && obs.monthly.months) || [];
+    // Gráficas y lectura: últimos 24 meses completos (se pide más historia para las tendencias).
+    var I0 = window.TerraShiftInterpretation;
+    var allMonths = (obs.monthly && obs.monthly.months) || [];
+    var months = (I0 ? I0.completeMonths(allMonths) : allMonths).slice(-24);
     charts.appendChild(C.chart(C.seriesFrom(months, "precipMmTotal"), "bar",
       { title: "Lluvia mensual (NASA POWER)", unit: "mm", decimals: 0 }));
     charts.appendChild(C.chart(C.seriesFrom(months, "rootzoneM3m3Mean"), "line",
@@ -125,6 +141,7 @@
       list.appendChild(li);
     });
     readingEl.hidden = lines.length === 0;
+    labelCells(table);
     panel.hidden = false;
   }
 
@@ -147,6 +164,7 @@
         row.insertCell().textContent = text;
       });
     });
+    labelCells(table);
     return table;
   }
 
@@ -205,6 +223,7 @@
         if (ind && ind.value === best && tied < codes.length) cell.className = "best";
       });
     });
+    labelCells(table);
     document.getElementById("comparison-note").textContent =
       "Estimación con la lluvia y la temperatura observadas por NASA POWER y un balance hídrico simple del suelo (FAO-56 y FAO-33). " +
       "Año seco: los 3 años con menos lluvia en el ciclo; canícula: los 3 años con menos lluvia en julio-agosto; año normal: los años intermedios. " +
@@ -280,7 +299,7 @@
       var result = await window.TerraShiftApi.loadComparison(cfg, zone);
       render(result);
       // Los datos de la NASA solo se piden si el servidor respondió; con la copia de respaldo no hay panel.
-      var obs = result.source === "live" ? await window.TerraShiftApi.loadObservations(cfg, zone, 24) : null;
+      var obs = result.source === "live" ? await window.TerraShiftApi.loadObservations(cfg, zone, 144) : null;
       renderNasaPanel(obs);
       renderInterpretation(result.data.strategies, obs && obs.monthly && obs.monthly.months);
     } catch (err) {
