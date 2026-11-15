@@ -56,7 +56,23 @@
     return { source: "backup", data: snapshot };
   }
 
-  var api = { loadComparison: loadComparison };
+  // Estado de las fuentes de la NASA y series mensuales. Si el servidor no responde o aún no
+  // tiene estos datos (404), devuelve null y la página simplemente oculta el panel.
+  async function loadObservations(config, zone, months) {
+    var base = config.apiBase.replace(/\/+$/, "");
+    var z = encodeURIComponent(zone);
+    try {
+      var results = await Promise.all([
+        getJson(base + "/api/v1/zones/" + z + "/data-status", config.timeoutMs),
+        getJson(base + "/api/v1/zones/" + z + "/observations/monthly?months=" + (months || 24), config.timeoutMs),
+      ]);
+      return { status: results[0], monthly: results[1] };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  var api = { loadComparison: loadComparison, loadObservations: loadObservations };
   root.TerraShiftApi = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

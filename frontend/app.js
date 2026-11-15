@@ -37,6 +37,87 @@
     statusEl.textContent = text;
   }
 
+  // Días de atraso a partir de los cuales una fuente se marca "Atrasada" (latencia de la NASA + margen).
+  var LATE_AFTER_DAYS = { power: 12, smap: 12, modis: 45, landsat: 25 };
+  var DAY_MS = 24 * 3600 * 1000;
+
+  // "2026-11-09" -> fecha local sin cambios de zona horaria
+  function parseIsoDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso));
+    return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+  }
+
+  function daysSince(iso) {
+    var d = parseIsoDate(iso);
+    if (!d) return null;
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.round((today - d) / DAY_MS);
+  }
+
+  function fmtDate(iso) {
+    var d = parseIsoDate(iso);
+    return d ? d.toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" }) : "—";
+  }
+
+  function fmtDateTime(iso) {
+    var d = iso ? new Date(iso) : null;
+    if (!d || isNaN(d.getTime())) return "—";
+    return d.toLocaleString("es", { dateStyle: "medium", timeStyle: "short" });
+  }
+
+  function badge(kind, text) {
+    return el("span", "badge badge--" + kind, text);
+  }
+
+  function sourceState(src) {
+    if (!src.lastDate) return badge("none", "Sin datos");
+    if (src.lastRunStatus === "error") return badge("error", "Error en la última sincronización");
+    var behind = daysSince(src.lastDate);
+    var limit = LATE_AFTER_DAYS[src.source] || 30;
+    return behind !== null && behind > limit ? badge("late", "Atrasada") : badge("ok", "Al día");
+  }
+
+  function renderNasaPanel(obs) {
+    var panel = document.getElementById("nasa-panel");
+    if (!obs || !obs.status || !obs.status.sources || obs.status.sources.length === 0) {
+      panel.hidden = true;
+      return;
+    }
+    var table = document.getElementById("nasa-sources");
+    table.replaceChildren();
+    var head = table.createTHead().insertRow();
+    ["Fuente", "Datos hasta", "Última sincronización", "Estado"].forEach(function (h) {
+      var th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = h;
+      head.appendChild(th);
+    });
+    var body = table.createTBody();
+    obs.status.sources.forEach(function (src) {
+      var row = body.insertRow();
+      row.insertCell().textContent = src.label;
+      var behind = src.lastDate ? daysSince(src.lastDate) : null;
+      row.insertCell().textContent = src.lastDate
+        ? fmtDate(src.lastDate) + (behind !== null && behind >= 0 ? " (hace " + behind + " d)" : "")
+        : "—";
+      row.insertCell().textContent = fmtDateTime(src.lastSyncOkAt);
+      row.insertCell().appendChild(sourceState(src));
+    });
+
+    var charts = document.getElementById("nasa-charts");
+    charts.replaceChildren();
+    var C = window.TerraShiftCharts;
+    var months = (obs.monthly && obs.monthly.months) || [];
+    charts.appendChild(C.chart(C.seriesFrom(months, "precipMmTotal"), "bar",
+      { title: "Lluvia mensual (NASA POWER)", unit: "mm", decimals: 0 }));
+    charts.appendChild(C.chart(C.seriesFrom(months, "rootzoneM3m3Mean"), "line",
+      { title: "Humedad en la zona de raíces (SMAP)", unit: "m³/m³", decimals: 2 }));
+    charts.appendChild(C.chart(C.seriesFrom(months, "ndviModisMean"), "line",
+      { title: "Vigor de la vegetación, NDVI (MODIS)", unit: "", decimals: 2, min: 0, max: 1 }));
+    panel.hidden = false;
+  }
+
   function renderIndicators(indicators) {
     if (!indicators || indicators.length === 0) {
       return el("p", "empty", "Sin resultados calculados todavía para esta estrategia.");
@@ -87,8 +168,12 @@
     buttonEl.disabled = true;
     setStatus("loading", "Conectando con el servidor…");
     try {
-      render(await window.TerraShiftApi.loadComparison(cfg, zone));
+      var result = await window.TerraShiftApi.loadComparison(cfg, zone);
+      render(result);
+      // Los datos de la NASA solo se piden si el servidor respondió; con la copia de respaldo no hay panel.
+      renderNasaPanel(result.source === "live" ? await window.TerraShiftApi.loadObservations(cfg, zone, 24) : null);
     } catch (err) {
+      document.getElementById("nasa-panel").hidden = true;
       resultsEl.replaceChildren();
       noteEl.hidden = true;
       setStatus("error", "No se pudieron cargar los datos. Intenta de nuevo en unos minutos.");

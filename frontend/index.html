@@ -26,6 +26,15 @@
     <p id="status" class="status status--loading" role="status" aria-live="polite">Conectando con el servidor…</p>
     <p id="note" class="note" hidden></p>
 
+    <section id="nasa-panel" class="panel" aria-labelledby="nasa-title" hidden>
+      <h2 id="nasa-title">Datos de la NASA en este servidor</h2>
+      <p class="panel__lead">Se actualizan solos cada día. Aquí se ve hasta qué fecha llega cada fuente y lo observado en la zona.</p>
+      <div class="table-wrap">
+        <table id="nasa-sources" class="indicators"></table>
+      </div>
+      <div id="nasa-charts" class="charts"></div>
+    </section>
+
     <section id="results" class="grid" aria-label="Estrategias de rotación"></section>
   </main>
 
@@ -39,6 +48,7 @@
 
   <script src="./config.js"></script>
   <script src="./api.js"></script>
+  <script src="./charts.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
