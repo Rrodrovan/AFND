@@ -115,6 +115,16 @@
       { title: "Humedad en la zona de raíces (SMAP)", unit: "m³/m³", decimals: 2 }));
     charts.appendChild(C.chart(C.seriesFrom(months, "ndviModisMean"), "line",
       { title: "Vigor de la vegetación, NDVI (MODIS)", unit: "", decimals: 2, min: 0, max: 1 }));
+    var lines = window.TerraShiftReading ? window.TerraShiftReading.read(months) : [];
+    var readingEl = document.getElementById("nasa-reading");
+    var list = document.getElementById("nasa-reading-list");
+    list.replaceChildren();
+    lines.forEach(function (text) {
+      var li = document.createElement("li");
+      li.textContent = text;
+      list.appendChild(li);
+    });
+    readingEl.hidden = lines.length === 0;
     panel.hidden = false;
   }
 
