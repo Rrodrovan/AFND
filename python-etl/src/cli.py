@@ -61,7 +61,49 @@ def build_parser() -> argparse.ArgumentParser:
     sync.add_argument("--timeout-min", type=int, default=360, help="Minutos máximos por tarea de AppEEARS")
     sync.add_argument("--dry-run", action="store_true", help="Solo muestra el plan; no descarga ni escribe")
     sync.add_argument("--today", type=date.fromisoformat, help=argparse.SUPPRESS)  # para pruebas
+
+    metrics = sub.add_parser(
+        "metrics", help="Calcula E1, E2 y E3 con los datos de NASA POWER ya cargados y guarda los resultados"
+    )
+    metrics.add_argument("--zone", default="piloto", help="Código de la zona (por defecto: piloto)")
+    metrics.add_argument("--dry-run", action="store_true", help="Calcula y muestra un resumen; no escribe en la base")
     return parser
+
+
+def run_metrics(args: argparse.Namespace) -> int:
+    from src.load import postgres
+    from src.metrics import strategies
+
+    with postgres.connect() as conn:
+        zone_id = postgres.find_zone_id(conn, args.zone)
+        bbox = postgres.zone_bbox(conn, args.zone) if zone_id else None
+        if zone_id is None or bbox is None:
+            print(f"La zona '{args.zone}' no existe o no tiene caja definida.")
+            return 1
+        rows = postgres.load_climate_for_metrics(conn, zone_id)
+        if not rows:
+            print(f"La zona '{args.zone}' no tiene clima de NASA POWER cargado. Ejecuta primero: sync.")
+            return 1
+        lat = (bbox[1] + bbox[3]) / 2
+        out = strategies.compute(
+            strategies.climate_index(rows), lat, rows[-1]["date"], rows[0]["date"]
+        )
+        if not out:
+            print("No hay suficientes ciclos completos de cultivo en la serie (se necesitan al menos 5 años).")
+            return 1
+        print(f"Zona '{args.zone}' (lat {lat:.2f}): {len(out)} resultados con la serie {rows[0]['date']} a {rows[-1]['date']}.")
+        for r in out:
+            if r["scenario"] == "normal" and r["indicator"].startswith("Rendimiento"):
+                print(
+                    f"  {r['crop']:<6} {r['strategy']}  rendimiento relativo (normal): "
+                    f"{r['value_mid']:.1f} % [{r['value_min']:.1f} – {r['value_max']:.1f}]"
+                )
+        if args.dry_run:
+            print("Simulación: no se escribió nada.")
+            return 0
+        written = postgres.replace_strategy_results(conn, zone_id, out)
+        print(f"Guardados {written} resultados (los anteriores de esta zona se reemplazaron).")
+    return 0
 
 
 def run_ingest(args: argparse.Namespace) -> int:
@@ -252,6 +294,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_ingest(args)
     if args.command == "sync":
         return run_sync_command(args)
+    if args.command == "metrics":
+        return run_metrics(args)
     return 1
 
 
