@@ -1,0 +1,11 @@
+[Unit]
+Description=TerraShift - sincronizacion diaria de datos NASA
+
+[Timer]
+# 09:40 UTC = 03:40 en Managua. Persistent: si la VM estaba apagada, se ejecuta al encenderse.
+OnCalendar=*-*-* 09:40:00 UTC
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target
