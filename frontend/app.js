@@ -78,6 +78,19 @@
     return behind !== null && behind > limit ? badge("late", "Atrasada") : badge("ok", "Al día");
   }
 
+  // Etiqueta cada celda con el título de su columna: en pantallas angostas la tabla se muestra como tarjetas.
+  function labelCells(table) {
+    if (!table.tHead || !table.tHead.rows.length) return;
+    var heads = [];
+    for (var i = 0; i < table.tHead.rows[0].cells.length; i++) heads.push(table.tHead.rows[0].cells[i].textContent);
+    for (var b = 0; b < table.tBodies.length; b++) {
+      for (var r = 0; r < table.tBodies[b].rows.length; r++) {
+        var cells = table.tBodies[b].rows[r].cells;
+        for (var c = 0; c < cells.length; c++) cells[c].setAttribute("data-label", heads[c] || "");
+      }
+    }
+  }
+
   function renderNasaPanel(obs) {
     var panel = document.getElementById("nasa-panel");
     if (!obs || !obs.status || !obs.status.sources || obs.status.sources.length === 0) {
@@ -108,13 +121,27 @@
     var charts = document.getElementById("nasa-charts");
     charts.replaceChildren();
     var C = window.TerraShiftCharts;
-    var months = (obs.monthly && obs.monthly.months) || [];
+    // Gráficas y lectura: últimos 24 meses completos (se pide más historia para las tendencias).
+    var I0 = window.TerraShiftInterpretation;
+    var allMonths = (obs.monthly && obs.monthly.months) || [];
+    var months = (I0 ? I0.completeMonths(allMonths) : allMonths).slice(-24);
     charts.appendChild(C.chart(C.seriesFrom(months, "precipMmTotal"), "bar",
       { title: "Lluvia mensual (NASA POWER)", unit: "mm", decimals: 0 }));
     charts.appendChild(C.chart(C.seriesFrom(months, "rootzoneM3m3Mean"), "line",
       { title: "Humedad en la zona de raíces (SMAP)", unit: "m³/m³", decimals: 2 }));
     charts.appendChild(C.chart(C.seriesFrom(months, "ndviModisMean"), "line",
       { title: "Vigor de la vegetación, NDVI (MODIS)", unit: "", decimals: 2, min: 0, max: 1 }));
+    var lines = window.TerraShiftReading ? window.TerraShiftReading.read(months) : [];
+    var readingEl = document.getElementById("nasa-reading");
+    var list = document.getElementById("nasa-reading-list");
+    list.replaceChildren();
+    lines.forEach(function (text) {
+      var li = document.createElement("li");
+      li.textContent = text;
+      list.appendChild(li);
+    });
+    readingEl.hidden = lines.length === 0;
+    labelCells(table);
     panel.hidden = false;
   }
 
@@ -137,12 +164,77 @@
         row.insertCell().textContent = text;
       });
     });
+    labelCells(table);
     return table;
+  }
+
+  // Tabla lado a lado: una fila por cultivo, escenario e indicador; una columna por estrategia.
+  var SCENARIO_ORDER = { normal: 0, seco: 1, canicula: 2 };
+  function higherIsBetter(name) { return /^(Rendimiento|Lluvia efectiva)/.test(name); }
+
+  function renderComparison(strategies) {
+    var section = document.getElementById("comparison");
+    var table = document.getElementById("comparison-table");
+    table.replaceChildren();
+    var codes = strategies.map(function (item) { return item.strategy.code; });
+    var rows = {};
+    var order = [];
+    strategies.forEach(function (item) {
+      (item.indicators || []).forEach(function (ind) {
+        var key = [ind.crop, ind.scenario, ind.indicator].join("|");
+        if (!rows[key]) { rows[key] = { ind: ind, values: {} }; order.push(key); }
+        rows[key].values[item.strategy.code] = ind;
+      });
+    });
+    if (order.length === 0) { section.hidden = true; return; }
+
+    order.sort(function (x, y) {
+      var a = rows[x].ind, b = rows[y].ind;
+      if (a.crop !== b.crop) return a.crop < b.crop ? -1 : 1;
+      var sa = SCENARIO_ORDER[a.scenario], sb = SCENARIO_ORDER[b.scenario];
+      return sa !== sb ? sa - sb : order.indexOf(x) - order.indexOf(y);
+    });
+
+    var head = table.createTHead().insertRow();
+    ["Cultivo", "Escenario", "Indicador"].concat(codes).forEach(function (h) {
+      var th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = h;
+      head.appendChild(th);
+    });
+    var body = table.createTBody();
+    order.forEach(function (key) {
+      var r = rows[key];
+      var row = body.insertRow();
+      [r.ind.crop, SCENARIOS[r.ind.scenario] || r.ind.scenario, r.ind.indicator].forEach(function (text) {
+        row.insertCell().textContent = text;
+      });
+      var best = null;
+      codes.forEach(function (c) {
+        var v = r.values[c] && r.values[c].value;
+        if (typeof v !== "number") return;
+        if (best === null || (higherIsBetter(r.ind.indicator) ? v > best : v < best)) best = v;
+      });
+      var tied = codes.filter(function (c) { return r.values[c] && r.values[c].value === best; }).length;
+      codes.forEach(function (c) {
+        var cell = row.insertCell();
+        var ind = r.values[c];
+        cell.textContent = ind ? fmtValue(ind) : "—";
+        if (ind && ind.value === best && tied < codes.length) cell.className = "best";
+      });
+    });
+    labelCells(table);
+    document.getElementById("comparison-note").textContent =
+      "Estimación con la lluvia y la temperatura observadas por NASA POWER y un balance hídrico simple del suelo (FAO-56 y FAO-33). " +
+      "Año seco: los 3 años con menos lluvia en el ciclo; canícula: los 3 años con menos lluvia en julio-agosto; año normal: los años intermedios. " +
+      "Cada valor es la media y el rango [mín – máx] de esos años. Los efectos de cada manejo son supuestos del modelo, no mediciones de campo.";
+    section.hidden = false;
   }
 
   function render(result) {
     var data = result.data;
     resultsEl.replaceChildren();
+    renderComparison(data.strategies || []);
 
     if (result.source === "live") {
       setStatus("live", "Datos en vivo desde el servidor");
@@ -159,9 +251,45 @@
       card.appendChild(el("span", "card__code", s.code));
       card.appendChild(el("h2", "card__title", s.name));
       card.appendChild(el("p", "card__focus", s.focus));
-      card.appendChild(renderIndicators(item.indicators));
+      if (item.indicators && item.indicators.length > 0) {
+        var details = el("details", "card__details");
+        details.appendChild(el("summary", "", "Ver todos los indicadores de " + s.code));
+        details.appendChild(renderIndicators(item.indicators));
+        card.appendChild(details);
+      } else {
+        card.appendChild(renderIndicators(item.indicators));
+      }
       resultsEl.appendChild(card);
     });
+  }
+
+  // Interpretación para el agricultor: reglas de interpretacion.json sobre los resultados y los datos NASA.
+  async function renderInterpretation(strategies, months) {
+    var section = document.getElementById("interpretation");
+    var body = document.getElementById("interpretation-body");
+    body.replaceChildren();
+    section.hidden = true;
+    var I = window.TerraShiftInterpretation;
+    if (!I || !strategies || strategies.length === 0) return;
+    try {
+      var rules = await I.load("./interpretacion.json?v=20261115c");
+      var sections = I.build(rules, strategies, months || []);
+      sections.forEach(function (sec) {
+        body.appendChild(el("h3", "interpretation__title", sec.titulo));
+        var list = el("ul", "interpretation__list");
+        sec.items.forEach(function (item) {
+          var li = el("li", "", item.texto);
+          if (item.criterio) {
+            li.appendChild(el("small", "interpretation__why", "Criterio: " + item.criterio));
+          }
+          list.appendChild(li);
+        });
+        body.appendChild(list);
+      });
+      section.hidden = sections.length === 0;
+    } catch (err) {
+      section.hidden = true;
+    }
   }
 
   async function run(zone) {
@@ -171,9 +299,12 @@
       var result = await window.TerraShiftApi.loadComparison(cfg, zone);
       render(result);
       // Los datos de la NASA solo se piden si el servidor respondió; con la copia de respaldo no hay panel.
-      renderNasaPanel(result.source === "live" ? await window.TerraShiftApi.loadObservations(cfg, zone, 24) : null);
+      var obs = result.source === "live" ? await window.TerraShiftApi.loadObservations(cfg, zone, 144) : null;
+      renderNasaPanel(obs);
+      renderInterpretation(result.data.strategies, obs && obs.monthly && obs.monthly.months);
     } catch (err) {
       document.getElementById("nasa-panel").hidden = true;
+      document.getElementById("interpretation").hidden = true;
       resultsEl.replaceChildren();
       noteEl.hidden = true;
       setStatus("error", "No se pudieron cargar los datos. Intenta de nuevo en unos minutos.");
@@ -197,27 +328,36 @@
     zoneInput.value = code;
   }
 
+  // Con el servidor disponible el menú empieza vacío ("Elige una zona…"): el mapa no dibuja nada hasta elegir.
   function fillZoneMenu(zones) {
-    var current = zoneInput.value || cfg.defaultZone;
     zoneInput.textContent = "";
+    var placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Elige una zona…";
+    zoneInput.appendChild(placeholder);
     (zones || []).forEach(function (z) {
       var option = document.createElement("option");
       option.value = z.code;
       option.textContent = z.name || z.code;
       zoneInput.appendChild(option);
     });
-    setZone(current);
+    zoneInput.value = "";
   }
 
   // El mapa muestra solo la zona elegida en el menú.
   var allZones = null;
   function syncMap() {
     if (!picker || !allZones) return;
-    picker.showZones(allZones.filter(function (z) { return z.code === zoneInput.value; }), true);
+    var chosen = allZones.filter(function (z) { return zoneInput.value !== "" && z.code === zoneInput.value; });
+    picker.showZones(chosen, chosen.length > 0);
   }
 
   zoneInput.addEventListener("change", function () {
     if (zoneInput.value) run(zoneInput.value);
+    else {
+      setStatus("loading", "Elige una zona en el menú para ver sus estrategias.");
+      document.getElementById("interpretation").hidden = true;
+    }
     syncMap();
   });
 
@@ -232,14 +372,19 @@
     onSelectZone: function () {},
   });
   window.TerraShiftApi.loadZones(cfg).then(function (zones) {
-    if (zones && zones.length) fillZoneMenu(zones);
     allZones = zones;
-    syncMap();
+    if (zones && zones.length) {
+      fillZoneMenu(zones);
+      resultsEl.replaceChildren();
+      setStatus("loading", "Elige una zona en el menú para ver sus estrategias.");
+      syncMap();
+    } else {
+      // Sin servidor: se muestra la zona por defecto con la copia de respaldo.
+      setZone(cfg.defaultZone);
+      run(cfg.defaultZone);
+    }
   });
 
   document.getElementById("repo-link").href = cfg.repoUrl;
   document.getElementById("docs-link").href = cfg.apiBase.replace(/\/+$/, "") + "/api/swagger-ui.html";
-
-  setZone(cfg.defaultZone);
-  run(cfg.defaultZone);
 })();

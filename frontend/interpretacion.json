@@ -1,0 +1,1945 @@
+{
+  "version": 2,
+  "descripcion": "Reglas condicionales que explican en lenguaje sencillo los resultados de E1, E2 y E3, las tendencias y proyecciones calculadas con las series de la NASA, y las recomendaciones que se derivan. Cada regla tiene una condición ('cuando') sobre hechos calculados y un texto con marcadores {hecho:decimales|escala}. Si falta un dato, la regla no se muestra. Se puede editar sin tocar el código. Las proyecciones son extrapolaciones del historial observado, no pronósticos del tiempo.",
+  "nombres": {
+    "E1": "la práctica tradicional (E1)",
+    "E2": "la conservación de agua (E2)",
+    "E3": "la regeneración del suelo (E3)",
+    "E2_E3": "la conservación de agua y la regeneración del suelo (E2 y E3)",
+    "ninguna": "ninguna",
+    "empate": "ninguna en particular"
+  },
+  "escalas": {
+    "brecha": [
+      {
+        "hasta": 1,
+        "texto": "casi nula"
+      },
+      {
+        "hasta": 3,
+        "texto": "pequeña"
+      },
+      {
+        "hasta": 7,
+        "texto": "moderada"
+      },
+      {
+        "hasta": null,
+        "texto": "grande"
+      }
+    ],
+    "caida": [
+      {
+        "hasta": 5,
+        "texto": "leve"
+      },
+      {
+        "hasta": 12,
+        "texto": "moderada"
+      },
+      {
+        "hasta": 20,
+        "texto": "fuerte"
+      },
+      {
+        "hasta": null,
+        "texto": "muy fuerte"
+      }
+    ],
+    "amplitud": [
+      {
+        "hasta": 20,
+        "texto": "estrecha"
+      },
+      {
+        "hasta": 35,
+        "texto": "amplia"
+      },
+      {
+        "hasta": null,
+        "texto": "muy amplia"
+      }
+    ],
+    "periodo": [
+      {
+        "hasta": 100,
+        "texto": "seca"
+      },
+      {
+        "hasta": 400,
+        "texto": "de lluvias intermedias"
+      },
+      {
+        "hasta": null,
+        "texto": "lluviosa"
+      }
+    ]
+  },
+  "secciones": [
+    {
+      "id": "resumen",
+      "titulo": "Lo más importante",
+      "reglas": [
+        {
+          "id": "resumen-ventaja",
+          "cuando": {
+            "hecho": "global.n_mejor",
+            "op": ">=",
+            "valor": 1
+          },
+          "texto": "En esta zona, el modelo ve ventaja de {global.mejor|nombres} en {global.n_mejor} de las {global.n_total} combinaciones de cultivo y tipo de año que se comparan.",
+          "criterio": "Se cuenta en cuántas combinaciones (maíz y frijol; año normal, seco y canícula) cada estrategia tiene el mayor rendimiento relativo."
+        },
+        {
+          "id": "resumen-sin-ventaja",
+          "cuando": {
+            "hecho": "global.n_mejor",
+            "op": "==",
+            "valor": 0
+          },
+          "texto": "En esta zona las tres estrategias dan resultados casi iguales: ninguna se separa claramente de las otras.",
+          "criterio": "Todas las diferencias de rendimiento entre estrategias son menores a 1 punto."
+        },
+        {
+          "id": "resumen-gap-pequeno",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "global.gap_max",
+                "op": "<",
+                "valor": 5
+              },
+              {
+                "hecho": "global.gap_max",
+                "op": "existe"
+              }
+            ]
+          },
+          "texto": "Las diferencias entre estrategias son pequeñas (la mayor es de {global.gap_max:1} puntos de rendimiento relativo). Lo que más cambia el resultado es el tipo de año, no el manejo.",
+          "criterio": "Diferencia máxima entre la mejor estrategia y E1 en cualquier cultivo y escenario, menor a 5 puntos."
+        },
+        {
+          "id": "resumen-gap-grande",
+          "cuando": {
+            "hecho": "global.gap_max",
+            "op": ">=",
+            "valor": 5
+          },
+          "texto": "El manejo sí marca diferencia: la mejor estrategia llega a superar a la práctica tradicional por {global.gap_max:1} puntos de rendimiento relativo en el caso más favorable.",
+          "criterio": "Diferencia máxima entre la mejor estrategia y E1 de 5 puntos o más."
+        },
+        {
+          "id": "resumen-riesgo-alto",
+          "cuando": {
+            "hecho": "zona.riesgo",
+            "op": "==",
+            "valor": "alto"
+          },
+          "texto": "Las tendencias de la NASA apuntan a un riesgo ALTO para los próximos ciclos: se cumplen {zona.riesgo_puntos} de {zona.riesgo_senales} señales de alerta (menos lluvia, julio-agosto más seco, más calor, canícula frecuente, vegetación a la baja).",
+          "criterio": "Riesgo alto: 3 o más señales de alerta; ver la sección de tendencias."
+        },
+        {
+          "id": "resumen-riesgo-medio",
+          "cuando": {
+            "hecho": "zona.riesgo",
+            "op": "==",
+            "valor": "medio"
+          },
+          "texto": "Las tendencias de la NASA muestran un riesgo MEDIO: se cumplen {zona.riesgo_puntos} de {zona.riesgo_senales} señales de alerta. Conviene vigilar la lluvia de julio y agosto.",
+          "criterio": "Riesgo medio: 2 señales de alerta."
+        },
+        {
+          "id": "resumen-riesgo-bajo",
+          "cuando": {
+            "hecho": "zona.riesgo",
+            "op": "==",
+            "valor": "bajo"
+          },
+          "texto": "Las tendencias de la NASA muestran un riesgo BAJO por ahora: solo {zona.riesgo_puntos} de {zona.riesgo_senales} señales de alerta. Aun así, la lluvia varía mucho de un año a otro.",
+          "criterio": "Riesgo bajo: 0 o 1 señales de alerta."
+        }
+      ]
+    },
+    {
+      "id": "normal",
+      "titulo": "Un año normal",
+      "reglas": [
+        {
+          "id": "normal-ninguna",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.normal.mejor",
+            "op": "==",
+            "valor": "ninguna"
+          },
+          "texto": "Para el $cultivo, en un año normal las tres estrategias rinden casi igual ({$c.normal.E1.rend:0} % con la práctica tradicional): el manejo importa poco.",
+          "criterio": "Diferencia menor a 1 punto entre las tres estrategias en año normal."
+        },
+        {
+          "id": "normal-e1",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.normal.mejor",
+            "op": "==",
+            "valor": "E1"
+          },
+          "texto": "Para el $cultivo, en un año normal la práctica tradicional rinde igual o más que las alternativas ({$c.normal.E1.rend:0} %): en este modelo las prácticas de conservación no mejoran el rendimiento en ese caso.",
+          "criterio": "E1 tiene el mayor rendimiento relativo en año normal."
+        },
+        {
+          "id": "normal-e2",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.normal.mejor",
+            "op": "==",
+            "valor": "E2"
+          },
+          "texto": "Para el $cultivo, en un año normal la conservación de agua (E2) rinde {$c.normal.E2.rend:0} % frente a {$c.normal.E1.rend:0} % de la práctica tradicional: ventaja {$c.normal.gap_E2|brecha} (+{$c.normal.gap_E2:1} puntos).",
+          "criterio": "E2 tiene el mayor rendimiento relativo en año normal."
+        },
+        {
+          "id": "normal-e3",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.normal.mejor",
+            "op": "==",
+            "valor": "E3"
+          },
+          "texto": "Para el $cultivo, en un año normal la regeneración del suelo (E3) rinde {$c.normal.E3.rend:0} % frente a {$c.normal.E1.rend:0} % de la práctica tradicional: ventaja {$c.normal.gap_E3|brecha} (+{$c.normal.gap_E3:1} puntos).",
+          "criterio": "E3 tiene el mayor rendimiento relativo en año normal."
+        },
+        {
+          "id": "normal-e2e3",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.normal.mejor",
+            "op": "==",
+            "valor": "E2_E3"
+          },
+          "texto": "Para el $cultivo, en un año normal la conservación de agua (E2) y la regeneración del suelo (E3) quedan casi parejas ({$c.normal.E2.rend:0} % y {$c.normal.E3.rend:0} %) y por encima de la práctica tradicional ({$c.normal.E1.rend:0} %).",
+          "criterio": "E2 y E3 difieren menos de 0,5 puntos y ambas superan a E1 en año normal."
+        }
+      ]
+    },
+    {
+      "id": "seco",
+      "titulo": "Un año seco",
+      "reglas": [
+        {
+          "id": "seco-caida-leve",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.caida_seco",
+            "op": "entre",
+            "rango": [
+              -100,
+              4.999
+            ]
+          },
+          "texto": "En un año seco, el $cultivo con la práctica tradicional casi no pierde rendimiento (de {$c.normal.E1.rend:0} % a {$c.seco.E1.rend:0} %): en este modelo aguanta bien la falta de agua.",
+          "criterio": "Caída menor a 5 puntos entre año normal y año seco."
+        },
+        {
+          "id": "seco-caida-moderada",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.caida_seco",
+            "op": "entre",
+            "rango": [
+              5,
+              11.999
+            ]
+          },
+          "texto": "En un año seco, el $cultivo con la práctica tradicional baja de {$c.normal.E1.rend:0} % a {$c.seco.E1.rend:0} %: una caída moderada ({$c.E1.caida_seco:0} puntos) que se puede amortiguar con buen manejo del agua.",
+          "criterio": "Caída de 5 a 12 puntos."
+        },
+        {
+          "id": "seco-caida-fuerte",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.caida_seco",
+            "op": "entre",
+            "rango": [
+              12,
+              19.999
+            ]
+          },
+          "texto": "En un año seco, el $cultivo con la práctica tradicional baja de {$c.normal.E1.rend:0} % a {$c.seco.E1.rend:0} %: una caída fuerte ({$c.E1.caida_seco:0} puntos). La sequía es su mayor riesgo.",
+          "criterio": "Caída de 12 a 20 puntos."
+        },
+        {
+          "id": "seco-caida-muy-fuerte",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.caida_seco",
+            "op": ">=",
+            "valor": 20
+          },
+          "texto": "En un año seco, el $cultivo con la práctica tradicional se desploma de {$c.normal.E1.rend:0} % a {$c.seco.E1.rend:0} % (caída muy fuerte, {$c.E1.caida_seco:0} puntos): un año seco puede arruinar gran parte de la cosecha.",
+          "criterio": "Caída de 20 puntos o más."
+        },
+        {
+          "id": "seco-menos-caida",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "$c.menos_caida",
+                "op": "!=",
+                "valor": "E1"
+              },
+              {
+                "hecho": "$c.menos_caida_mejora",
+                "op": ">=",
+                "valor": 1
+              }
+            ]
+          },
+          "texto": "En año seco, para el $cultivo, quien mejor amortigua la sequía es {$c.menos_caida|nombres}: su caída es de {$c.menos_caida_valor:0} puntos frente a {$c.E1.caida_seco:0} de la práctica tradicional.",
+          "criterio": "Estrategia con la menor caída entre año normal y año seco, si mejora a E1 en al menos 1 punto."
+        },
+        {
+          "id": "seco-mejor-ninguna",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.seco.mejor",
+            "op": "==",
+            "valor": "ninguna"
+          },
+          "texto": "Para el $cultivo, en un año seco las tres estrategias rinden casi igual ({$c.seco.E1.rend:0} % con la práctica tradicional): el manejo importa poco.",
+          "criterio": "Diferencia menor a 1 punto entre las tres estrategias en año seco."
+        },
+        {
+          "id": "seco-mejor-e1",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.seco.mejor",
+            "op": "==",
+            "valor": "E1"
+          },
+          "texto": "Para el $cultivo, en un año seco la práctica tradicional rinde igual o más que las alternativas ({$c.seco.E1.rend:0} %): en este modelo las prácticas de conservación no mejoran el rendimiento en ese caso.",
+          "criterio": "E1 tiene el mayor rendimiento relativo en año seco."
+        },
+        {
+          "id": "seco-mejor-e2",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.seco.mejor",
+            "op": "==",
+            "valor": "E2"
+          },
+          "texto": "Para el $cultivo, en un año seco la conservación de agua (E2) rinde {$c.seco.E2.rend:0} % frente a {$c.seco.E1.rend:0} % de la práctica tradicional: ventaja {$c.seco.gap_E2|brecha} (+{$c.seco.gap_E2:1} puntos).",
+          "criterio": "E2 tiene el mayor rendimiento relativo en año seco."
+        },
+        {
+          "id": "seco-mejor-e3",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.seco.mejor",
+            "op": "==",
+            "valor": "E3"
+          },
+          "texto": "Para el $cultivo, en un año seco la regeneración del suelo (E3) rinde {$c.seco.E3.rend:0} % frente a {$c.seco.E1.rend:0} % de la práctica tradicional: ventaja {$c.seco.gap_E3|brecha} (+{$c.seco.gap_E3:1} puntos).",
+          "criterio": "E3 tiene el mayor rendimiento relativo en año seco."
+        },
+        {
+          "id": "seco-mejor-e2e3",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.seco.mejor",
+            "op": "==",
+            "valor": "E2_E3"
+          },
+          "texto": "Para el $cultivo, en un año seco la conservación de agua (E2) y la regeneración del suelo (E3) quedan casi parejas ({$c.seco.E2.rend:0} % y {$c.seco.E3.rend:0} %) y por encima de la práctica tradicional ({$c.seco.E1.rend:0} %).",
+          "criterio": "E2 y E3 difieren menos de 0,5 puntos y ambas superan a E1 en año seco."
+        },
+        {
+          "id": "seco-deficit-e2",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.seco.def_red_E2",
+            "op": ">=",
+            "valor": 10
+          },
+          "texto": "En año seco, la conservación de agua (E2) le ahorra al $cultivo unos {$c.seco.def_red_E2:0} mm de agua que de otro modo le faltarían durante el ciclo.",
+          "criterio": "Déficit de transpiración de E1 menos el de E2 en año seco."
+        },
+        {
+          "id": "seco-deficit-e3",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.seco.def_red_E3",
+            "op": ">=",
+            "valor": 10
+          },
+          "texto": "En año seco, la regeneración del suelo (E3) le ahorra al $cultivo unos {$c.seco.def_red_E3:0} mm de déficit de agua, porque el suelo guarda más humedad.",
+          "criterio": "Déficit de transpiración de E1 menos el de E3 en año seco."
+        },
+        {
+          "id": "seco-estres-bajo",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.seco.E1.estres",
+            "op": "<",
+            "valor": 0.1
+          },
+          "texto": "El estrés hídrico del $cultivo en año seco es bajo ({$c.seco.E1.estres:2} en una escala de 0 a 1): casi siempre encuentra agua en el suelo.",
+          "criterio": "Índice de estrés hídrico menor a 0,1."
+        },
+        {
+          "id": "seco-estres-medio",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.seco.E1.estres",
+            "op": "entre",
+            "rango": [
+              0.1,
+              0.2999
+            ]
+          },
+          "texto": "El estrés hídrico del $cultivo en año seco es medio ({$c.seco.E1.estres:2} de 1): pasa por algunos periodos con falta de agua.",
+          "criterio": "Índice de estrés hídrico entre 0,1 y 0,3."
+        },
+        {
+          "id": "seco-estres-alto",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.seco.E1.estres",
+            "op": ">=",
+            "valor": 0.3
+          },
+          "texto": "El estrés hídrico del $cultivo en año seco es alto ({$c.seco.E1.estres:2} de 1): la planta pasa por periodos largos sin agua suficiente.",
+          "criterio": "Índice de estrés hídrico de 0,3 o más."
+        }
+      ]
+    },
+    {
+      "id": "canicula",
+      "titulo": "Una canícula prolongada",
+      "reglas": [
+        {
+          "id": "canicula-leve",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.caida_canicula",
+            "op": "entre",
+            "rango": [
+              -100,
+              2.999
+            ]
+          },
+          "texto": "Si la canícula (la pausa de lluvias de julio y agosto) se alarga, el $cultivo casi no lo siente en este modelo ({$c.canicula.E1.rend:0} %).",
+          "criterio": "Caída menor a 3 puntos frente a un año normal."
+        },
+        {
+          "id": "canicula-moderada",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.caida_canicula",
+            "op": "entre",
+            "rango": [
+              3,
+              9.999
+            ]
+          },
+          "texto": "Si la canícula se alarga, el $cultivo con la práctica tradicional baja a {$c.canicula.E1.rend:0} %: una pérdida moderada de {$c.E1.caida_canicula:0} puntos.",
+          "criterio": "Caída de 3 a 10 puntos."
+        },
+        {
+          "id": "canicula-fuerte",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.caida_canicula",
+            "op": ">=",
+            "valor": 10
+          },
+          "texto": "Si la canícula se alarga, el $cultivo con la práctica tradicional baja a {$c.canicula.E1.rend:0} %: una pérdida fuerte de {$c.E1.caida_canicula:0} puntos.",
+          "criterio": "Caída de 10 puntos o más."
+        },
+        {
+          "id": "canicula-peor-que-seco",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.caida_canicula",
+            "op": ">",
+            "valor_hecho": "$c.E1.caida_seco"
+          },
+          "texto": "Para el $cultivo, la canícula prolongada le hace más daño que un año seco en general: coincide con la etapa en que más agua necesita.",
+          "criterio": "La caída por canícula es mayor que la caída por año seco."
+        },
+        {
+          "id": "canicula-similar-seco",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.caida_canicula",
+            "op": "<=",
+            "valor_hecho": "$c.E1.caida_seco"
+          },
+          "texto": "Para el $cultivo, la canícula prolongada no es peor que un año seco en general: su efecto es parecido o menor.",
+          "criterio": "La caída por canícula no supera la caída por año seco."
+        },
+        {
+          "id": "canicula-mejor-ninguna",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.canicula.mejor",
+            "op": "==",
+            "valor": "ninguna"
+          },
+          "texto": "Para el $cultivo, ante una canícula prolongada las tres estrategias rinden casi igual ({$c.canicula.E1.rend:0} % con la práctica tradicional): el manejo importa poco.",
+          "criterio": "Diferencia menor a 1 punto entre las tres estrategias en canícula."
+        },
+        {
+          "id": "canicula-mejor-e1",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.canicula.mejor",
+            "op": "==",
+            "valor": "E1"
+          },
+          "texto": "Para el $cultivo, ante una canícula prolongada la práctica tradicional rinde igual o más que las alternativas ({$c.canicula.E1.rend:0} %): en este modelo las prácticas de conservación no mejoran el rendimiento en ese caso.",
+          "criterio": "E1 tiene el mayor rendimiento relativo en canícula."
+        },
+        {
+          "id": "canicula-mejor-e2",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.canicula.mejor",
+            "op": "==",
+            "valor": "E2"
+          },
+          "texto": "Para el $cultivo, ante una canícula prolongada la conservación de agua (E2) rinde {$c.canicula.E2.rend:0} % frente a {$c.canicula.E1.rend:0} % de la práctica tradicional: ventaja {$c.canicula.gap_E2|brecha} (+{$c.canicula.gap_E2:1} puntos).",
+          "criterio": "E2 tiene el mayor rendimiento relativo en canícula."
+        },
+        {
+          "id": "canicula-mejor-e3",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.canicula.mejor",
+            "op": "==",
+            "valor": "E3"
+          },
+          "texto": "Para el $cultivo, ante una canícula prolongada la regeneración del suelo (E3) rinde {$c.canicula.E3.rend:0} % frente a {$c.canicula.E1.rend:0} % de la práctica tradicional: ventaja {$c.canicula.gap_E3|brecha} (+{$c.canicula.gap_E3:1} puntos).",
+          "criterio": "E3 tiene el mayor rendimiento relativo en canícula."
+        },
+        {
+          "id": "canicula-mejor-e2e3",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.canicula.mejor",
+            "op": "==",
+            "valor": "E2_E3"
+          },
+          "texto": "Para el $cultivo, ante una canícula prolongada la conservación de agua (E2) y la regeneración del suelo (E3) quedan casi parejas ({$c.canicula.E2.rend:0} % y {$c.canicula.E3.rend:0} %) y por encima de la práctica tradicional ({$c.canicula.E1.rend:0} %).",
+          "criterio": "E2 y E3 difieren menos de 0,5 puntos y ambas superan a E1 en canícula."
+        }
+      ]
+    },
+    {
+      "id": "variabilidad",
+      "titulo": "Qué tan seguro es el resultado",
+      "reglas": [
+        {
+          "id": "var-estrecha",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.amplitud",
+            "op": "<",
+            "valor": 20
+          },
+          "texto": "Los resultados del $cultivo varían poco de un año a otro ({$c.normal.E1.rend_min:0} % a {$c.normal.E1.rend_max:0} % con la práctica tradicional): el resultado es relativamente estable.",
+          "criterio": "Diferencia entre el mínimo y el máximo del rendimiento de E1 en años normales menor a 20 puntos."
+        },
+        {
+          "id": "var-amplia",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.amplitud",
+            "op": "entre",
+            "rango": [
+              20,
+              34.999
+            ]
+          },
+          "texto": "Los resultados del $cultivo varían bastante de un año a otro ({$c.normal.E1.rend_min:0} % a {$c.normal.E1.rend_max:0} % con la práctica tradicional): conviene mirar varios años y no solo el último.",
+          "criterio": "Diferencia de 20 a 35 puntos."
+        },
+        {
+          "id": "var-muy-amplia",
+          "para": [
+            {
+              "c": "maiz",
+              "cultivo": "maíz"
+            },
+            {
+              "c": "frijol",
+              "cultivo": "frijol"
+            }
+          ],
+          "cuando": {
+            "hecho": "$c.E1.amplitud",
+            "op": ">=",
+            "valor": 35
+          },
+          "texto": "Los resultados del $cultivo varían mucho de un año a otro: con la práctica tradicional van de {$c.normal.E1.rend_min:0} % a {$c.normal.E1.rend_max:0} % incluso en años normales. Un solo año no sirve para juzgar una práctica.",
+          "criterio": "Diferencia de 35 puntos o más."
+        },
+        {
+          "id": "var-diferencias-menores",
+          "cuando": {
+            "hecho": "global.gap_max",
+            "op": "<",
+            "valor": 8
+          },
+          "texto": "Las diferencias entre estrategias son menores que la variación entre años. Por eso conviene leer los resultados como una tendencia y no como una promesa de cosecha.",
+          "criterio": "La diferencia máxima entre estrategias es menor a 8 puntos."
+        },
+        {
+          "id": "var-diferencias-mayores",
+          "cuando": {
+            "hecho": "global.gap_max",
+            "op": ">=",
+            "valor": 8
+          },
+          "texto": "La ventaja de la mejor estrategia es de {global.gap_max:0} puntos: es mayor que la que se ve entre muchos años distintos, lo que da más confianza en que el manejo sí influye.",
+          "criterio": "La diferencia máxima entre estrategias es de 8 puntos o más."
+        },
+        {
+          "id": "var-modelo",
+          "cuando": {
+            "hecho": "global.n_total",
+            "op": ">=",
+            "valor": 1
+          },
+          "texto": "Los resultados son estimaciones de un modelo simple de balance de agua con datos de la NASA. Los efectos de cada práctica son supuestos del modelo, no mediciones hechas en una finca.",
+          "criterio": "Método descrito en la sección 2 del README."
+        }
+      ]
+    },
+    {
+      "id": "nasa",
+      "titulo": "Lo que muestran los datos de la NASA en esta zona",
+      "reglas": [
+        {
+          "id": "nasa-lluvia-baja",
+          "cuando": {
+            "hecho": "zona.lluvia12",
+            "op": "<",
+            "valor": 700
+          },
+          "texto": "En los últimos {zona.meses_lluvia} meses con datos cayeron unos {zona.lluvia12:0} mm de lluvia: una cantidad baja para el Corredor Seco.",
+          "criterio": "Suma de la lluvia mensual de NASA POWER; baja si es menor a 700 mm."
+        },
+        {
+          "id": "nasa-lluvia-intermedia",
+          "cuando": {
+            "hecho": "zona.lluvia12",
+            "op": "entre",
+            "rango": [
+              700,
+              1199.99
+            ]
+          },
+          "texto": "En los últimos {zona.meses_lluvia} meses con datos cayeron unos {zona.lluvia12:0} mm de lluvia: una cantidad intermedia, normal para una zona seca de Nicaragua.",
+          "criterio": "Entre 700 y 1200 mm."
+        },
+        {
+          "id": "nasa-lluvia-alta",
+          "cuando": {
+            "hecho": "zona.lluvia12",
+            "op": ">=",
+            "valor": 1200
+          },
+          "texto": "En los últimos {zona.meses_lluvia} meses con datos cayeron unos {zona.lluvia12:0} mm de lluvia: una cantidad alta para esta región.",
+          "criterio": "1200 mm o más."
+        },
+        {
+          "id": "nasa-meses-secos-pocos",
+          "cuando": {
+            "hecho": "zona.meses_secos",
+            "op": "entre",
+            "rango": [
+              0,
+              2
+            ]
+          },
+          "texto": "Hubo {zona.meses_secos} meses con menos de 50 mm de lluvia: la época seca fue corta.",
+          "criterio": "Mes seco: menos de 50 mm; de 0 a 2 meses."
+        },
+        {
+          "id": "nasa-meses-secos-varios",
+          "cuando": {
+            "hecho": "zona.meses_secos",
+            "op": "entre",
+            "rango": [
+              3,
+              4
+            ]
+          },
+          "texto": "Hubo {zona.meses_secos} meses con menos de 50 mm de lluvia: una época seca de duración normal.",
+          "criterio": "De 3 a 4 meses secos."
+        },
+        {
+          "id": "nasa-meses-secos-muchos",
+          "cuando": {
+            "hecho": "zona.meses_secos",
+            "op": ">=",
+            "valor": 5
+          },
+          "texto": "Hubo {zona.meses_secos} meses con menos de 50 mm de lluvia: la época seca es larga y el agua guardada en el suelo pesa mucho.",
+          "criterio": "5 meses secos o más."
+        },
+        {
+          "id": "nasa-canicula-frecuente",
+          "cuando": {
+            "hecho": "zona.canicula_frec",
+            "op": ">=",
+            "valor": 50
+          },
+          "texto": "En {zona.canicula_anios} de los {zona.anios_evaluados} años con datos completos de junio a septiembre la lluvia de julio y agosto bajó claramente: la canícula es la regla en esta zona, no la excepción.",
+          "criterio": "Julio o agosto por debajo del 80 % del promedio de junio y septiembre, en la mitad o más de los años."
+        },
+        {
+          "id": "nasa-canicula-ocasional",
+          "cuando": {
+            "hecho": "zona.canicula_frec",
+            "op": "entre",
+            "rango": [
+              0.01,
+              49.99
+            ]
+          },
+          "texto": "En {zona.canicula_anios} de los {zona.anios_evaluados} años con datos completos hubo una pausa clara de lluvias en julio-agosto: la canícula aparece de vez en cuando.",
+          "criterio": "Canícula en menos de la mitad de los años."
+        },
+        {
+          "id": "nasa-sin-canicula",
+          "cuando": {
+            "hecho": "zona.canicula_frec",
+            "op": "==",
+            "valor": 0
+          },
+          "texto": "En los {zona.anios_evaluados} años con datos completos no se ve un descenso claro de lluvia en julio-agosto.",
+          "criterio": "Ningún año con julio-agosto por debajo del 80 % del promedio de junio y septiembre."
+        },
+        {
+          "id": "nasa-ndvi-menor",
+          "cuando": {
+            "hecho": "zona.ndvi_cambio",
+            "op": "<=",
+            "valor": -10
+          },
+          "texto": "La vegetación se ve menos vigorosa que hace un año en el mismo mes ({zona.ndvi_cambio:0} % en el índice NDVI).",
+          "criterio": "NDVI del último dato frente al mismo mes del año anterior; menos de -10 %."
+        },
+        {
+          "id": "nasa-ndvi-mayor",
+          "cuando": {
+            "hecho": "zona.ndvi_cambio",
+            "op": ">=",
+            "valor": 10
+          },
+          "texto": "La vegetación se ve más vigorosa que hace un año en el mismo mes (+{zona.ndvi_cambio:0} % en el índice NDVI).",
+          "criterio": "Más de +10 %."
+        },
+        {
+          "id": "nasa-ndvi-similar",
+          "cuando": {
+            "hecho": "zona.ndvi_cambio",
+            "op": "entre",
+            "rango": [
+              -9.99,
+              9.99
+            ]
+          },
+          "texto": "El vigor de la vegetación es parecido al de hace un año en el mismo mes.",
+          "criterio": "Cambio de NDVI entre -10 % y +10 %."
+        },
+        {
+          "id": "nasa-smap-pendiente",
+          "cuando": {
+            "hecho": "zona.smap",
+            "op": "==",
+            "valor": 0
+          },
+          "texto": "La humedad del suelo medida por SMAP todavía se está cargando para esta zona, por eso no entra en esta lectura.",
+          "criterio": "No hay datos de SMAP cargados."
+        },
+        {
+          "id": "nasa-smap-baja",
+          "cuando": {
+            "hecho": "zona.smap_reciente",
+            "op": "<",
+            "valor": 0.2
+          },
+          "texto": "La humedad del suelo en la zona de raíces (SMAP) de los últimos meses es baja ({zona.smap_reciente:2} m³/m³): el suelo está seco.",
+          "criterio": "Promedio de los 3 últimos meses de SMAP en zona de raíces menor a 0,20 m³/m³."
+        },
+        {
+          "id": "nasa-smap-media",
+          "cuando": {
+            "hecho": "zona.smap_reciente",
+            "op": "entre",
+            "rango": [
+              0.2,
+              0.2999
+            ]
+          },
+          "texto": "La humedad del suelo en la zona de raíces (SMAP) de los últimos meses es media ({zona.smap_reciente:2} m³/m³).",
+          "criterio": "Entre 0,20 y 0,30 m³/m³."
+        },
+        {
+          "id": "nasa-smap-alta",
+          "cuando": {
+            "hecho": "zona.smap_reciente",
+            "op": ">=",
+            "valor": 0.3
+          },
+          "texto": "La humedad del suelo en la zona de raíces (SMAP) de los últimos meses es alta ({zona.smap_reciente:2} m³/m³): el suelo guarda buena humedad.",
+          "criterio": "0,30 m³/m³ o más."
+        }
+      ]
+    },
+    {
+      "id": "tendencias",
+      "titulo": "Tendencias de la NASA (últimos 3 años frente a los anteriores)",
+      "reglas": [
+        {
+          "id": "tend-lluvia-baja",
+          "cuando": {
+            "hecho": "zona.lluvia_tendencia",
+            "op": "<=",
+            "valor": -10
+          },
+          "texto": "La lluvia anual de los últimos 3 años es {zona.lluvia_tendencia:0|abs} % menor que la de los años anteriores: la zona se está volviendo más seca.",
+          "criterio": "Promedio de lluvia anual de los 3 últimos años completos frente a los anteriores; baja si cae 10 % o más."
+        },
+        {
+          "id": "tend-lluvia-estable",
+          "cuando": {
+            "hecho": "zona.lluvia_tendencia",
+            "op": "entre",
+            "rango": [
+              -9.99,
+              9.99
+            ]
+          },
+          "texto": "La lluvia anual de los últimos 3 años es parecida a la de los años anteriores: no se ve una tendencia clara.",
+          "criterio": "Cambio entre -10 % y +10 %."
+        },
+        {
+          "id": "tend-lluvia-alta",
+          "cuando": {
+            "hecho": "zona.lluvia_tendencia",
+            "op": ">=",
+            "valor": 10
+          },
+          "texto": "La lluvia anual de los últimos 3 años es {zona.lluvia_tendencia:0} % mayor que la de los años anteriores: la zona viene más lluviosa.",
+          "criterio": "Sube 10 % o más."
+        },
+        {
+          "id": "tend-julago-baja",
+          "cuando": {
+            "hecho": "zona.julago_tendencia",
+            "op": "<=",
+            "valor": -15
+          },
+          "texto": "La lluvia de julio y agosto bajó {zona.julago_tendencia:0|abs} % en los últimos 3 años: la canícula se está haciendo más marcada.",
+          "criterio": "Lluvia de julio-agosto de los 3 últimos años frente a los anteriores; baja si cae 15 % o más."
+        },
+        {
+          "id": "tend-julago-estable",
+          "cuando": {
+            "hecho": "zona.julago_tendencia",
+            "op": "entre",
+            "rango": [
+              -14.99,
+              14.99
+            ]
+          },
+          "texto": "La lluvia de julio y agosto se mantiene parecida a la de años anteriores.",
+          "criterio": "Cambio entre -15 % y +15 %."
+        },
+        {
+          "id": "tend-julago-alta",
+          "cuando": {
+            "hecho": "zona.julago_tendencia",
+            "op": ">=",
+            "valor": 15
+          },
+          "texto": "La lluvia de julio y agosto subió {zona.julago_tendencia:0} % en los últimos 3 años: la canícula se ha suavizado.",
+          "criterio": "Sube 15 % o más."
+        },
+        {
+          "id": "tend-temp-calida",
+          "cuando": {
+            "hecho": "zona.temp_tendencia",
+            "op": ">=",
+            "valor": 0.4
+          },
+          "texto": "La temperatura media de los últimos 3 años es {zona.temp_tendencia:1} °C más alta que la de años anteriores: más calor significa que el suelo y las plantas pierden más agua.",
+          "criterio": "Temperatura media anual de los 3 últimos años completos frente a los anteriores; más cálida si sube 0,4 °C o más."
+        },
+        {
+          "id": "tend-temp-estable",
+          "cuando": {
+            "hecho": "zona.temp_tendencia",
+            "op": "entre",
+            "rango": [
+              -0.39,
+              0.39
+            ]
+          },
+          "texto": "La temperatura media se mantiene parecida a la de años anteriores.",
+          "criterio": "Cambio entre -0,4 y +0,4 °C."
+        },
+        {
+          "id": "tend-temp-fresca",
+          "cuando": {
+            "hecho": "zona.temp_tendencia",
+            "op": "<=",
+            "valor": -0.4
+          },
+          "texto": "La temperatura media de los últimos 3 años es algo más baja que la de años anteriores, lo que reduce un poco la pérdida de agua.",
+          "criterio": "Baja 0,4 °C o más."
+        },
+        {
+          "id": "tend-ndvi-baja",
+          "cuando": {
+            "hecho": "zona.ndvi_tendencia",
+            "op": "<=",
+            "valor": -5
+          },
+          "texto": "El vigor de la vegetación (NDVI) de los últimos 3 años es {zona.ndvi_tendencia:0|abs} % menor que el de años anteriores: la zona verdea menos.",
+          "criterio": "NDVI anual medio de los 3 últimos años frente a los anteriores; baja si cae 5 % o más."
+        },
+        {
+          "id": "tend-ndvi-estable",
+          "cuando": {
+            "hecho": "zona.ndvi_tendencia",
+            "op": "entre",
+            "rango": [
+              -4.99,
+              4.99
+            ]
+          },
+          "texto": "El vigor de la vegetación se mantiene parecido al de años anteriores.",
+          "criterio": "Cambio entre -5 % y +5 %."
+        },
+        {
+          "id": "tend-ndvi-alta",
+          "cuando": {
+            "hecho": "zona.ndvi_tendencia",
+            "op": ">=",
+            "valor": 5
+          },
+          "texto": "El vigor de la vegetación de los últimos 3 años es {zona.ndvi_tendencia:0} % mayor que el de años anteriores: la zona verdea más.",
+          "criterio": "Sube 5 % o más."
+        },
+        {
+          "id": "tend-canicula-reciente",
+          "cuando": {
+            "hecho": "zona.canicula_recientes",
+            "op": ">=",
+            "valor": 2
+          },
+          "texto": "En {zona.canicula_recientes} de los últimos 3 años se vio señal de canícula: la pausa de julio-agosto se repite últimamente.",
+          "criterio": "2 o 3 de los 3 últimos años con señal de canícula."
+        },
+        {
+          "id": "tend-canicula-ausente",
+          "cuando": {
+            "hecho": "zona.canicula_recientes",
+            "op": "<=",
+            "valor": 1
+          },
+          "texto": "En los últimos 3 años la canícula apareció pocas veces ({zona.canicula_recientes} de 3).",
+          "criterio": "0 o 1 de los 3 últimos años con señal de canícula."
+        }
+      ]
+    },
+    {
+      "id": "proyeccion",
+      "titulo": "Qué se espera según el historial de la NASA",
+      "reglas": [
+        {
+          "id": "proy-anual-menor",
+          "cuando": {
+            "hecho": "zona.proy_vs_media",
+            "op": "<=",
+            "valor": -10
+          },
+          "texto": "Si la tendencia sigue, la lluvia del próximo año sería de unos {zona.proy_lluvia_anual:0} mm, {zona.proy_vs_media:0|abs} % menos que el promedio histórico ({zona.lluvia_media_anual:0} mm). Es una proyección lineal con pocos años: una señal, no una promesa.",
+          "criterio": "Ajuste lineal de la lluvia anual (6 años completos o más), limitado al rango observado; menor al promedio en 10 % o más."
+        },
+        {
+          "id": "proy-anual-similar",
+          "cuando": {
+            "hecho": "zona.proy_vs_media",
+            "op": "entre",
+            "rango": [
+              -9.99,
+              9.99
+            ]
+          },
+          "texto": "Si la tendencia sigue, la lluvia del próximo año sería parecida al promedio histórico (unos {zona.proy_lluvia_anual:0} mm frente a {zona.lluvia_media_anual:0} mm). Es una proyección con pocos años, solo orientativa.",
+          "criterio": "Proyección entre -10 % y +10 % del promedio."
+        },
+        {
+          "id": "proy-anual-mayor",
+          "cuando": {
+            "hecho": "zona.proy_vs_media",
+            "op": ">=",
+            "valor": 10
+          },
+          "texto": "Si la tendencia sigue, la lluvia del próximo año sería de unos {zona.proy_lluvia_anual:0} mm, {zona.proy_vs_media:0} % más que el promedio histórico ({zona.lluvia_media_anual:0} mm). Es una proyección con pocos años, solo orientativa.",
+          "criterio": "Proyección 10 % o más sobre el promedio."
+        },
+        {
+          "id": "proy-3m",
+          "cuando": {
+            "hecho": "zona.proy_lluvia_3m",
+            "op": "existe"
+          },
+          "texto": "En {zona.prox_meses} suele llover en total unos {zona.proy_lluvia_3m:0} mm según los años observados: una época {zona.proy_lluvia_3m|periodo}.",
+          "criterio": "Promedio histórico de lluvia de esos tres meses; seca si es menor a 100 mm y lluviosa si pasa de 400 mm."
+        },
+        {
+          "id": "proy-3m-seco-seguro",
+          "cuando": {
+            "hecho": "zona.prox_prob_seco",
+            "op": ">=",
+            "valor": 80
+          },
+          "texto": "En casi todos los años observados esos meses tuvieron menos de 50 mm de lluvia: se puede contar con que serán secos.",
+          "criterio": "El 80 % o más de los meses del historial tuvo menos de 50 mm."
+        },
+        {
+          "id": "proy-3m-variable",
+          "cuando": {
+            "hecho": "zona.prox_prob_seco",
+            "op": "entre",
+            "rango": [
+              0,
+              79.99
+            ]
+          },
+          "texto": "Esos meses no siempre fueron secos en el historial: en {zona.prox_prob_seco:0} % de los casos tuvieron menos de 50 mm. Hay incertidumbre sobre cuánto lloverá.",
+          "criterio": "Menos del 80 % de los meses del historial tuvo menos de 50 mm."
+        },
+        {
+          "id": "proy-anios-secos-frecuentes",
+          "cuando": {
+            "hecho": "zona.anios_secos_frec",
+            "op": ">=",
+            "valor": 25
+          },
+          "texto": "El {zona.anios_secos_frec:0} % de los años fue claramente seco (menos del 85 % de la lluvia promedio): los años malos no son raros.",
+          "criterio": "El 25 % o más de los años completos tuvo menos del 85 % de la lluvia promedio."
+        },
+        {
+          "id": "proy-anios-secos-raros",
+          "cuando": {
+            "hecho": "zona.anios_secos_frec",
+            "op": "entre",
+            "rango": [
+              0,
+              24.99
+            ]
+          },
+          "texto": "Los años claramente secos (menos del 85 % de la lluvia promedio) son poco frecuentes en el historial: {zona.anios_secos_frec:0} % de los años.",
+          "criterio": "Menos del 25 % de los años completos tuvo menos del 85 % de la lluvia promedio."
+        }
+      ]
+    },
+    {
+      "id": "recomendaciones",
+      "titulo": "Recomendaciones (según resultados, tendencias y proyección)",
+      "reglas": [
+        {
+          "id": "rec-alto-e2",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "alto"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E2"
+              }
+            ]
+          },
+          "texto": "Con riesgo alto y ventaja de la conservación de agua (E2), priorice obras que retengan la lluvia (barreras vivas, curvas a nivel, rastrojo como cobertura) antes de la próxima época seca.",
+          "criterio": "Riesgo alto (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E2."
+        },
+        {
+          "id": "rec-alto-e3",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "alto"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E3"
+              }
+            ]
+          },
+          "texto": "Con riesgo alto y ventaja de la regeneración del suelo (E3), empiece ya con abonos verdes y compost: un suelo con más materia orgánica guarda agua para los meses críticos, aunque el beneficio tarda varios ciclos.",
+          "criterio": "Riesgo alto (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E3."
+        },
+        {
+          "id": "rec-alto-e2_e3",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "alto"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E2_E3"
+              }
+            ]
+          },
+          "texto": "Con riesgo alto, combine la conservación de agua (E2) con la regeneración del suelo (E3): una retiene la lluvia que cae y la otra ayuda al suelo a guardarla.",
+          "criterio": "Riesgo alto (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E2_E3."
+        },
+        {
+          "id": "rec-alto-e1",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "alto"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E1"
+              }
+            ]
+          },
+          "texto": "El modelo no ve ventaja de las alternativas, pero con riesgo alto conviene probar en una parcela pequeña cobertura del suelo o abonos verdes y comparar con su práctica actual.",
+          "criterio": "Riesgo alto (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E1."
+        },
+        {
+          "id": "rec-alto-ninguna",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "alto"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "ninguna"
+              }
+            ]
+          },
+          "texto": "Con riesgo alto y sin diferencias claras entre estrategias, elija la práctica de menor costo que mantenga el suelo cubierto y reparta el riesgo con distintas fechas de siembra.",
+          "criterio": "Riesgo alto (señales de alerta de las tendencias NASA) y estrategia con más ventajas: ninguna."
+        },
+        {
+          "id": "rec-alto-empate",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "alto"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "empate"
+              }
+            ]
+          },
+          "texto": "Con riesgo alto y varias estrategias parejas, escoja la que le resulte más barata y fácil de mantener, y evite dejar el suelo descubierto en la época seca.",
+          "criterio": "Riesgo alto (señales de alerta de las tendencias NASA) y estrategia con más ventajas: empate."
+        },
+        {
+          "id": "rec-medio-e2",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "medio"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E2"
+              }
+            ]
+          },
+          "texto": "Con riesgo medio y ventaja de E2, puede empezar por una parte del terreno con barreras vivas o curvas a nivel y ampliar si ve resultados.",
+          "criterio": "Riesgo medio (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E2."
+        },
+        {
+          "id": "rec-medio-e3",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "medio"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E3"
+              }
+            ]
+          },
+          "texto": "Con riesgo medio y ventaja de E3, incorpore abonos verdes o compost de forma gradual; el suelo mejora con los ciclos.",
+          "criterio": "Riesgo medio (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E3."
+        },
+        {
+          "id": "rec-medio-e2_e3",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "medio"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E2_E3"
+              }
+            ]
+          },
+          "texto": "Con riesgo medio, E2 y E3 mejoran la práctica tradicional: puede empezar con la que sea más fácil en su terreno y sumar la otra después.",
+          "criterio": "Riesgo medio (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E2_E3."
+        },
+        {
+          "id": "rec-medio-e1",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "medio"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E1"
+              }
+            ]
+          },
+          "texto": "Con riesgo medio y sin ventaja clara de las alternativas, su práctica actual es razonable; vigile la lluvia de julio y agosto y mantenga el suelo cubierto.",
+          "criterio": "Riesgo medio (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E1."
+        },
+        {
+          "id": "rec-medio-ninguna",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "medio"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "ninguna"
+              }
+            ]
+          },
+          "texto": "Con riesgo medio y estrategias casi iguales, decida por costo y mano de obra, y mantenga cobertura del suelo como seguro barato.",
+          "criterio": "Riesgo medio (señales de alerta de las tendencias NASA) y estrategia con más ventajas: ninguna."
+        },
+        {
+          "id": "rec-medio-empate",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "medio"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "empate"
+              }
+            ]
+          },
+          "texto": "Con riesgo medio y estrategias parejas, pruebe la más sencilla en una parcela y compare con la práctica actual antes de cambiar todo.",
+          "criterio": "Riesgo medio (señales de alerta de las tendencias NASA) y estrategia con más ventajas: empate."
+        },
+        {
+          "id": "rec-bajo-e2",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "bajo"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E2"
+              }
+            ]
+          },
+          "texto": "Con riesgo bajo, la conservación de agua (E2) sigue siendo la que mejor rinde: conviene como inversión de largo plazo, sin urgencia.",
+          "criterio": "Riesgo bajo (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E2."
+        },
+        {
+          "id": "rec-bajo-e3",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "bajo"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E3"
+              }
+            ]
+          },
+          "texto": "Con riesgo bajo, la regeneración del suelo (E3) es una inversión a varios ciclos; puede hacerse sin prisa y en etapas.",
+          "criterio": "Riesgo bajo (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E3."
+        },
+        {
+          "id": "rec-bajo-e2_e3",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "bajo"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E2_E3"
+              }
+            ]
+          },
+          "texto": "Con riesgo bajo, E2 y E3 mejoran un poco el rendimiento: son buenas opciones de mejora gradual, sin urgencia.",
+          "criterio": "Riesgo bajo (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E2_E3."
+        },
+        {
+          "id": "rec-bajo-e1",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "bajo"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "E1"
+              }
+            ]
+          },
+          "texto": "Con riesgo bajo y sin ventaja de las alternativas, mantener su práctica actual es razonable; revise cada año cómo se comporta la lluvia.",
+          "criterio": "Riesgo bajo (señales de alerta de las tendencias NASA) y estrategia con más ventajas: E1."
+        },
+        {
+          "id": "rec-bajo-ninguna",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "bajo"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "ninguna"
+              }
+            ]
+          },
+          "texto": "Con riesgo bajo y estrategias casi iguales, no hay urgencia de cambiar: decida por costo y comodidad.",
+          "criterio": "Riesgo bajo (señales de alerta de las tendencias NASA) y estrategia con más ventajas: ninguna."
+        },
+        {
+          "id": "rec-bajo-empate",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "zona.riesgo",
+                "op": "==",
+                "valor": "bajo"
+              },
+              {
+                "hecho": "global.mejor",
+                "op": "==",
+                "valor": "empate"
+              }
+            ]
+          },
+          "texto": "Con riesgo bajo y estrategias parejas, puede elegir la que más le convenga por costo y disponibilidad de materiales.",
+          "criterio": "Riesgo bajo (señales de alerta de las tendencias NASA) y estrategia con más ventajas: empate."
+        },
+        {
+          "id": "rec-maiz-canicula-alta",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "maiz.E1.caida_canicula",
+                "op": ">=",
+                "valor": 10
+              },
+              {
+                "hecho": "zona.canicula_frec",
+                "op": ">=",
+                "valor": 50
+              }
+            ]
+          },
+          "texto": "La canícula es frecuente y el maíz sufre mucho con ella: hable con un técnico sobre sembrar temprano, con las primeras lluvias, y sobre variedades de ciclo corto para que el momento de mayor necesidad de agua no caiga en esa pausa.",
+          "criterio": "El maíz pierde 10 puntos o más por canícula y esta aparece en la mitad o más de los años."
+        },
+        {
+          "id": "rec-maiz-canicula-media",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "maiz.E1.caida_canicula",
+                "op": ">=",
+                "valor": 10
+              },
+              {
+                "hecho": "zona.canicula_frec",
+                "op": "<",
+                "valor": 50
+              }
+            ]
+          },
+          "texto": "El maíz sufre con la canícula, que aparece solo algunos años: asegure la siembra cuando el suelo tenga humedad estable y mantenga cobertura para aguantar la pausa si llega.",
+          "criterio": "El maíz pierde 10 puntos o más por canícula y esta aparece en menos de la mitad de los años."
+        },
+        {
+          "id": "rec-maiz-canicula-baja",
+          "cuando": {
+            "hecho": "maiz.E1.caida_canicula",
+            "op": "<",
+            "valor": 10
+          },
+          "texto": "El maíz aguanta relativamente bien la canícula en este modelo; aun así, mantener el suelo cubierto ayuda a pasar la pausa de lluvias.",
+          "criterio": "El maíz pierde menos de 10 puntos por canícula."
+        },
+        {
+          "id": "rec-frijol-lluvia-baja",
+          "cuando": {
+            "hecho": "zona.lluvia_tendencia",
+            "op": "<=",
+            "valor": -10
+          },
+          "texto": "Para el frijol de postrera, con la lluvia a la baja, siembre cuando el suelo ya guarde humedad en septiembre y considere variedades de ciclo corto, para no depender de lluvias tardías.",
+          "criterio": "La lluvia anual de los últimos 3 años bajó 10 % o más."
+        },
+        {
+          "id": "rec-frijol-lluvia-estable",
+          "cuando": {
+            "hecho": "zona.lluvia_tendencia",
+            "op": "entre",
+            "rango": [
+              -9.99,
+              9.99
+            ]
+          },
+          "texto": "Para el frijol de postrera, la lluvia es estable: mantenga su fecha habitual de siembra y vigile el inicio de septiembre.",
+          "criterio": "La lluvia anual no muestra tendencia clara."
+        },
+        {
+          "id": "rec-frijol-lluvia-alta",
+          "cuando": {
+            "hecho": "zona.lluvia_tendencia",
+            "op": ">=",
+            "valor": 10
+          },
+          "texto": "Para el frijol de postrera, con más lluvia, cuide el drenaje del terreno y las enfermedades que aparecen con exceso de humedad.",
+          "criterio": "La lluvia anual de los últimos 3 años subió 10 % o más."
+        },
+        {
+          "id": "rec-temp-calida-cobertura",
+          "cuando": {
+            "hecho": "zona.temp_tendencia",
+            "op": ">=",
+            "valor": 0.4
+          },
+          "texto": "Con más calor, cubra el suelo con rastrojo o cobertura viva: reduce la evaporación y mantiene el suelo más fresco.",
+          "criterio": "La temperatura media subió 0,4 °C o más."
+        },
+        {
+          "id": "rec-temp-calida-agua",
+          "cuando": {
+            "hecho": "zona.temp_tendencia",
+            "op": ">=",
+            "valor": 0.4
+          },
+          "texto": "Con más calor las plantas gastan más agua: si puede regar, hágalo temprano o al final de la tarde para perder menos por evaporación.",
+          "criterio": "La temperatura media subió 0,4 °C o más."
+        },
+        {
+          "id": "rec-ndvi-baja-revision",
+          "cuando": {
+            "hecho": "zona.ndvi_tendencia",
+            "op": "<=",
+            "valor": -5
+          },
+          "texto": "Si la vegetación de la zona verdea cada vez menos, revise sus parcelas: pueden estar influyendo la falta de cobertura, el suelo agotado o las plagas.",
+          "criterio": "El NDVI anual bajó 5 % o más."
+        },
+        {
+          "id": "rec-ndvi-baja-cobertura",
+          "cuando": {
+            "hecho": "zona.ndvi_cambio",
+            "op": "<=",
+            "valor": -10
+          },
+          "texto": "El último dato de vegetación está por debajo del de hace un año: no deje el suelo desnudo y proteja los rastrojos de la quema.",
+          "criterio": "NDVI 10 % o más por debajo del mismo mes del año anterior."
+        },
+        {
+          "id": "rec-ndvi-alta",
+          "cuando": {
+            "hecho": "zona.ndvi_tendencia",
+            "op": ">=",
+            "valor": 5
+          },
+          "texto": "La vegetación de la zona viene mejorando: mantenga las prácticas que protegen el suelo para sostener esa mejora.",
+          "criterio": "El NDVI anual subió 5 % o más."
+        },
+        {
+          "id": "rec-prox-seca-suelo",
+          "cuando": {
+            "hecho": "zona.proy_lluvia_3m",
+            "op": "<",
+            "valor": 100
+          },
+          "texto": "Los próximos meses ({zona.prox_meses}) suelen ser secos: deje el rastrojo sobre el suelo y evite quemar, para que la tierra no quede desnuda.",
+          "criterio": "El promedio histórico de lluvia de los próximos 3 meses es menor a 100 mm."
+        },
+        {
+          "id": "rec-prox-seca-obras",
+          "cuando": {
+            "hecho": "zona.proy_lluvia_3m",
+            "op": "<",
+            "valor": 100
+          },
+          "texto": "Aproveche estos meses secos para reparar o construir obras de conservación (barreras, curvas a nivel, reservorios), antes de que vuelvan las lluvias.",
+          "criterio": "Lo mismo, época seca."
+        },
+        {
+          "id": "rec-prox-lluviosa-drenaje",
+          "cuando": {
+            "hecho": "zona.proy_lluvia_3m",
+            "op": ">=",
+            "valor": 400
+          },
+          "texto": "Los próximos meses ({zona.prox_meses}) suelen ser lluviosos: revise el drenaje y las obras de conservación para que la lluvia no arrastre el suelo.",
+          "criterio": "El promedio histórico de lluvia de los próximos 3 meses es de 400 mm o más."
+        },
+        {
+          "id": "rec-prox-lluviosa-siembra",
+          "cuando": {
+            "hecho": "zona.proy_lluvia_3m",
+            "op": ">=",
+            "valor": 400
+          },
+          "texto": "En estos meses lluviosos es buen momento para sembrar y para incorporar abonos verdes; evite labrar en suelo muy mojado.",
+          "criterio": "Lo mismo, época lluviosa."
+        },
+        {
+          "id": "rec-prox-intermedia",
+          "cuando": {
+            "hecho": "zona.proy_lluvia_3m",
+            "op": "entre",
+            "rango": [
+              100,
+              399.99
+            ]
+          },
+          "texto": "Los próximos meses ({zona.prox_meses}) suelen tener lluvias intermedias: planifique las labores según cómo evolucione la lluvia y no se adelante a sembrar con una sola lluvia.",
+          "criterio": "El promedio histórico de lluvia de los próximos 3 meses está entre 100 y 400 mm."
+        },
+        {
+          "id": "rec-smap-baja",
+          "cuando": {
+            "hecho": "zona.smap_reciente",
+            "op": "<",
+            "valor": 0.2
+          },
+          "texto": "El suelo está seco en la zona de raíces: no siembre confiando en una lluvia aislada, espere a que la humedad se mantenga.",
+          "criterio": "La humedad reciente de SMAP en zona de raíces es menor a 0,20 m³/m³."
+        },
+        {
+          "id": "rec-maiz-muy-fuerte",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "maiz.E1.caida_seco",
+                "op": ">=",
+                "valor": 20
+              },
+              {
+                "hecho": "zona.anios_secos_frec",
+                "op": ">=",
+                "valor": 25
+              }
+            ]
+          },
+          "texto": "Como los años secos son frecuentes y el maíz se resiente mucho, tenga un plan para los años malos: reserva de granos y de semilla, y no ponga toda la siembra en una sola fecha.",
+          "criterio": "El maíz pierde 20 puntos o más en año seco y el 25 % o más de los años fue seco."
+        },
+        {
+          "id": "rec-sin-tendencias",
+          "cuando": {
+            "todas": [
+              {
+                "hecho": "global.n_total",
+                "op": ">=",
+                "valor": 1
+              },
+              {
+                "no": {
+                  "hecho": "zona.riesgo",
+                  "op": "existe"
+                }
+              }
+            ]
+          },
+          "texto": "Todavía no hay suficientes años de datos de la NASA en este servidor para estimar tendencias de esta zona; las recomendaciones se basan solo en la comparación de estrategias.",
+          "criterio": "Se necesitan 6 años completos de datos y 3 señales evaluables para calcular el riesgo."
+        },
+        {
+          "id": "rec-costo",
+          "cuando": {
+            "hecho": "global.gap_max",
+            "op": "<",
+            "valor": 3
+          },
+          "texto": "Como las diferencias de rendimiento entre estrategias son pequeñas, decida también por costo, mano de obra y materiales disponibles: este modelo no calcula costos.",
+          "criterio": "Diferencia máxima entre estrategias menor a 3 puntos."
+        },
+        {
+          "id": "rec-tecnico",
+          "cuando": {
+            "hecho": "global.n_total",
+            "op": ">=",
+            "valor": 1
+          },
+          "texto": "Esta lectura es general para la zona. Antes de cambiar una práctica en su finca, consulte con un técnico agrónomo que conozca su suelo y su terreno.",
+          "criterio": "Aviso fijo."
+        }
+      ]
+    }
+  ]
+}

@@ -6,7 +6,7 @@
   <title>TerraShift · Estrategias de rotación para el Corredor Seco</title>
   <meta name="description" content="Comparación de estrategias de rotación de cultivos frente a la sequía en el Corredor Seco de Nicaragua, con datos de la NASA.">
   <link rel="stylesheet" href="./vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=20261115c">
 </head>
 <body>
   <header class="hero">
@@ -48,6 +48,25 @@
         <table id="nasa-sources" class="indicators"></table>
       </div>
       <div id="nasa-charts" class="charts"></div>
+      <div id="nasa-reading" class="reading" hidden>
+        <h3>Lectura de los datos</h3>
+        <ul id="nasa-reading-list"></ul>
+        <p class="reading__note">Lectura automática con reglas fijas sobre los valores observados de esta zona. Describe lo que pasó; no es un pronóstico ni sustituye la opinión de un técnico agrónomo.</p>
+      </div>
+    </section>
+
+    <section id="comparison" class="panel" aria-labelledby="comparison-title" hidden>
+      <h2 id="comparison-title">Comparación de las tres estrategias</h2>
+      <p class="panel__lead">Mismo clima observado por la NASA para las tres; cambia solo el manejo. En negrita, la mejor de las tres en cada fila.</p>
+      <div class="table-wrap"><table id="comparison-table" class="indicators"></table></div>
+      <p id="comparison-note" class="reading__note"></p>
+    </section>
+
+    <section id="interpretation" class="panel" aria-labelledby="interpretation-title" hidden>
+      <h2 id="interpretation-title">Qué significan estos resultados</h2>
+      <p class="panel__lead">Explicación en lenguaje sencillo de los datos de la NASA y de la comparación de las tres estrategias.</p>
+      <div id="interpretation-body"></div>
+      <p class="reading__note">Interpretación automática con reglas fijas (archivo <code>interpretacion.json</code>) aplicadas a los resultados de esta zona; no usa inteligencia artificial ni inventa datos. Es una estimación general y no sustituye la asesoría de un técnico agrónomo.</p>
     </section>
 
     <section id="results" class="grid" aria-label="Estrategias de rotación"></section>
@@ -61,12 +80,14 @@
     </p>
   </footer>
 
-  <script src="./config.js"></script>
-  <script src="./api.js"></script>
-  <script src="./charts.js"></script>
+  <script src="./config.js?v=20261115c"></script>
+  <script src="./api.js?v=20261115c"></script>
+  <script src="./charts.js?v=20261115c"></script>
   <script src="./vendor/leaflet/leaflet.js"></script>
-  <script src="./zonelogic.js"></script>
-  <script src="./zonepicker.js"></script>
-  <script src="./app.js"></script>
+  <script src="./zonelogic.js?v=20261115c"></script>
+  <script src="./zonepicker.js?v=20261115c"></script>
+  <script src="./reading.js?v=20261115c"></script>
+  <script src="./interpretacion.js?v=20261115c"></script>
+  <script src="./app.js?v=20261115c"></script>
 </body>
 </html>
