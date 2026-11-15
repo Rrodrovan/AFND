@@ -55,7 +55,8 @@ def upsert_soil_moisture(
             ON CONFLICT (zone_id, date) DO UPDATE SET
                 surface_m3m3 = EXCLUDED.surface_m3m3,
                 rootzone_m3m3 = EXCLUDED.rootzone_m3m3,
-                source = EXCLUDED.source
+                source = EXCLUDED.source,
+                updated_at = now()
             """,
             payload,
         )
@@ -77,7 +78,8 @@ def upsert_vegetation_index(
             VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (zone_id, date, source) DO UPDATE SET
                 ndvi = EXCLUDED.ndvi,
-                evi = EXCLUDED.evi
+                evi = EXCLUDED.evi,
+                updated_at = now()
             """,
             payload,
         )
@@ -98,9 +100,70 @@ def upsert_climate_daily(
         INSERT INTO climate_daily (zone_id, date, {", ".join(CLIMATE_COLUMNS)})
         VALUES (%s, %s, {", ".join(["%s"] * len(CLIMATE_COLUMNS))})
         ON CONFLICT (zone_id, date) DO UPDATE SET
-            {", ".join(f"{col} = EXCLUDED.{col}" for col in CLIMATE_COLUMNS)}
+            {", ".join(f"{col} = EXCLUDED.{col}" for col in CLIMATE_COLUMNS)},
+            updated_at = now()
     """
     with conn.cursor() as cur:
         cur.executemany(sql, payload)
     conn.commit()
     return len(payload)
+
+
+# ---------------------------------------------------------------------------------------------
+# Seguimiento de la sincronización (tabla ingest_run, ver database/init/03_ingest_tracking.sql)
+# ---------------------------------------------------------------------------------------------
+
+_LATEST_DATE_SQL = {
+    "power": "SELECT max(date) FROM climate_daily WHERE zone_id = %s",
+    "smap": "SELECT max(date) FROM soil_moisture WHERE zone_id = %s",
+    "modis": "SELECT max(date) FROM vegetation_index WHERE zone_id = %s AND source = 'MODIS'",
+    "landsat": "SELECT max(date) FROM vegetation_index WHERE zone_id = %s AND source = 'LANDSAT'",
+}
+
+
+def find_zone_id(conn: psycopg.Connection, code: str) -> int | None:
+    with conn.cursor() as cur:
+        cur.execute("SELECT id FROM zone WHERE code = %s", (code,))
+        row = cur.fetchone()
+    return row[0] if row else None
+
+
+def latest_date(conn: psycopg.Connection, zone_id: int, source: str):
+    """Última fecha con datos cargados para una fuente en una zona (None si no hay)."""
+    with conn.cursor() as cur:
+        cur.execute(_LATEST_DATE_SQL[source], (zone_id,))
+        return cur.fetchone()[0]
+
+
+def start_run(conn: psycopg.Connection, zone_id: int, source: str, start, end) -> int:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO ingest_run (zone_id, source, status, range_start, range_end)
+            VALUES (%s, %s, 'running', %s, %s) RETURNING id
+            """,
+            (zone_id, source, start, end),
+        )
+        run_id = cur.fetchone()[0]
+    conn.commit()
+    return run_id
+
+
+def finish_run(
+    conn: psycopg.Connection,
+    run_id: int,
+    status: str,
+    rows_loaded: int = 0,
+    last_data_date=None,
+    error: str | None = None,
+) -> None:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE ingest_run
+               SET status = %s, rows_loaded = %s, last_data_date = %s, error = %s, finished_at = now()
+             WHERE id = %s
+            """,
+            (status, rows_loaded, last_data_date, (error or "")[:2000] or None, run_id),
+        )
+    conn.commit()

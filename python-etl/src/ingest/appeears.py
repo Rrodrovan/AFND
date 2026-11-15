@@ -126,6 +126,15 @@ class AppeearsClient:
             return response
         return response
 
+    # -- catálogo -------------------------------------------------------------------------
+
+    def list_products(self) -> list[dict[str, Any]]:
+        """Catálogo público de productos de AppEEARS (no requiere iniciar sesión)."""
+        response = self.session.request("GET", f"{self.base_url}/product", timeout=60)
+        if response.status_code != 200:
+            raise AppeearsError(f"No se pudo leer el catálogo de productos (HTTP {response.status_code})")
+        return response.json()
+
     # -- tareas ---------------------------------------------------------------------------
 
     def submit_point_task(
@@ -217,3 +226,24 @@ class AppeearsClient:
         task_id = self.submit_point_task(name, layers, points, start, end)
         self.wait_for_task(task_id)
         return self.download_results(task_id)
+
+
+def newer_product_versions(products: Sequence[dict[str, Any]], product_and_version: str) -> list[str]:
+    """Versiones más nuevas (y vigentes) del mismo producto, p. ej. 'SPL4SMGP.008' -> ['SPL4SMGP.009'].
+
+    Solo avisa: cambiar de versión puede cambiar los nombres de las capas, así que se hace a mano.
+    """
+    name, _, version = product_and_version.rpartition(".")
+    if not version.isdigit():
+        return []
+    found: list[tuple[int, str]] = []
+    for item in products:
+        item_name = item.get("Product")
+        item_version = str(item.get("Version", ""))
+        if item_name != name or not item_version.isdigit():
+            continue
+        if item.get("Deleted") or item.get("Available") is False:
+            continue
+        if int(item_version) > int(version):
+            found.append((int(item_version), f"{name}.{item_version}"))
+    return [label for _, label in sorted(found)]

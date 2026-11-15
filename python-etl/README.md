@@ -49,6 +49,39 @@ Las tareas de AppEEARS entran en una cola de la NASA: pueden tardar de minutos a
 las demás continúan y el comando termina con código 1 indicando cuáles fallaron. Es seguro repetirlo: las
 cargas son idempotentes.
 
+## Actualización automática (`sync`)
+
+`ingest` carga un rango fijo; `sync` es el comando pensado para correr todos los días y **trae solo lo que falta**:
+
+```bash
+python -m src.cli sync --zone piloto            # lo nuevo de cada fuente
+python -m src.cli sync --zone piloto --dry-run  # solo muestra qué pediría (no descarga ni escribe)
+python -m src.cli sync --zone piloto --source smap
+```
+
+Para cada fuente mira la última fecha cargada en la base y pide desde ahí hasta `hoy − latencia`
+(la NASA publica con retraso). La primera vez, con la base vacía, descarga el histórico desde `ETL_START_DATE`
+en tramos (cada uno se guarda al terminar, así un corte no pierde lo ya cargado).
+
+| Fuente | Latencia | Se re-piden | Nuevo dato posible cada | Tramo |
+|---|---|---|---|---|
+| NASA POWER | 5 d | 14 d | 1 d | 5 años |
+| SMAP | 5 d | 7 d | 1 d | 1 año |
+| MODIS | 24 d | 32 d | 16 d | 2 años |
+| Landsat/HLS | 7 d | 15 d | 5 d | 1 año |
+
+*Re-piden*: la NASA puede corregir los últimos datos; repetirlos no duplica nada (UPSERT).
+Si no puede haber datos nuevos todavía, la fuente se marca "al día" sin consultar a la NASA.
+Las latencias son estimaciones prudentes (`src/sync.py`, `POLICIES`), no mediciones: ajústalas si ves que la NASA publica antes o después.
+
+Cada intento queda en la tabla `ingest_run`; la vista `v_data_freshness` resume por fuente hasta qué fecha hay datos y
+cómo fue la última sincronización, y la API la publica en `/api/v1/zones/{zona}/data-status`, que alimenta el panel de la página.
+
+Al terminar, `sync` consulta el catálogo público de AppEEARS y **avisa** si existe una versión de SMAP más nueva que
+`SPL4SMGP.008`. No cambia de versión por su cuenta: una versión nueva puede renombrar capas, y es mejor revisarlo a mano.
+
+Instalación del temporizador diario en la VM: ver [`deploy/README.md`](../deploy/README.md).
+
 ## Cómo se obtiene un valor por zona
 
 Se muestrea una **rejilla de N×N puntos** dentro de `PILOT_ZONE_BBOX` y se promedian por fecha los píxeles
@@ -66,6 +99,7 @@ solo el píxel del centro.
 
 ## Pendiente de verificar contra el servicio real
 
+- Las **latencias de `sync`** y la respuesta de `GET /product` (campos `Product`, `Version`, `Deleted`, `Available`) son supuestos; el aviso de versión nueva nunca hace fallar la sincronización.
 Estos puntos se escribieron a partir de la documentación oficial, pero **no se han probado contra AppEEARS**
 (el entorno de desarrollo no tenía acceso a la NASA). Si algo falla en la primera ejecución, el mensaje de
 error lista las columnas recibidas para corregirlo rápido:
