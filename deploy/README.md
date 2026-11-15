@@ -36,3 +36,31 @@ Los endpoints nuevos (`/data-status`, `/observations/monthly`) requieren recompi
 ```bash
 cd ~/AFND/java-backend && mvn -q -DskipTests package && sudo systemctl restart terrashift
 ```
+
+## Zonas propuestas desde el mapa
+
+Necesita (una sola vez) el SQL de zonas, un token de administrador y la cabecera `X-Real-IP` en Nginx.
+
+```bash
+cd ~/AFND && git pull
+
+# 1. SQL de zonas (si ya corriste setup-sync.sh después de este cambio, ya está aplicado)
+sudo bash -c 'set -a; . /etc/terrashift-etl.env; set +a; PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f database/init/04_zone_requests.sql'
+
+# 2. Token de administrador (se genera uno y se guarda en el archivo del backend)
+grep -q TERRASHIFT_ADMIN_TOKEN /etc/terrashift.env || echo "TERRASHIFT_ADMIN_TOKEN=$(openssl rand -hex 24)" | sudo tee -a /etc/terrashift.env >/dev/null
+sudo grep TERRASHIFT_ADMIN_TOKEN /etc/terrashift.env     # ese es el token que pegas en admin.html; no lo compartas
+
+# 3. Nginx: debe pasar la IP real del visitante
+sudo grep -rn "proxy_pass\|X-Real-IP" /etc/nginx/sites-enabled/
+#   Si no sale X-Real-IP, agrega justo debajo de la línea proxy_pass:
+#       proxy_set_header X-Real-IP $remote_addr;
+#   y recarga:  sudo nginx -t && sudo systemctl reload nginx
+
+# 4. Recompilar y reiniciar el backend
+cd java-backend && mvn -q -DskipTests package && sudo systemctl restart terrashift
+cd .. && bash deploy/setup-sync.sh      # vuelve a instalar el servicio (ahora sincroniza todas las zonas aprobadas)
+```
+
+Revisar solicitudes: abre `https://rrodrovan.github.io/AFND/admin.html`, pega el token y aprueba o rechaza.
+Después de aprobar, la descarga empieza en la siguiente sincronización (o ya: `sudo systemctl start terrashift-sync.service --no-block`).

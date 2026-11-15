@@ -85,6 +85,83 @@ paths:
                 $ref: "#/components/schemas/ObservationsResponse"
         "404":
           description: La zona no existe
+  /api/v1/zones:
+    get:
+      summary: Zonas aprobadas
+      description: Solo las zonas aprobadas son públicas. Las pendientes y rechazadas no aparecen.
+      responses:
+        "200":
+          description: Lista de zonas con su caja (oeste, sur, este, norte)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ZoneSummary" }
+  /api/v1/zones/requests:
+    post:
+      summary: Propone una zona nueva (queda pendiente de aprobación)
+      description: >
+        No se descarga ningún dato hasta que un administrador la apruebe. Límites: dentro de Nicaragua,
+        entre 0,02° y 0,5° por lado, 5 solicitudes por hora por origen y un máximo de 20 pendientes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ZoneRequest" }
+      responses:
+        "201":
+          description: Solicitud registrada (estado pending)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZoneSummary" }
+        "400":
+          description: 'Datos inválidos; el cuerpo trae {"error": "mensaje"}'
+        "429":
+          description: Demasiadas solicitudes (por origen o pendientes en total)
+  /api/v1/admin/zones/pending:
+    get:
+      summary: Solicitudes pendientes (administrador)
+      parameters:
+        - { name: X-Admin-Token, in: header, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Zonas pendientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ZoneSummary" }
+        "401": { description: Token inválido }
+        "404": { description: Administración desactivada en el servidor (sin TERRASHIFT_ADMIN_TOKEN) }
+        "429": { description: Demasiados intentos fallidos }
+  /api/v1/admin/zones/{code}/approve:
+    post:
+      summary: Aprueba una zona pendiente (administrador)
+      parameters:
+        - { name: code, in: path, required: true, schema: { type: string } }
+        - { name: X-Admin-Token, in: header, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Zona aprobada; la sincronización diaria empezará a descargar sus datos
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZoneSummary" }
+        "401": { description: Token inválido }
+        "404": { description: No hay una solicitud pendiente con ese código }
+  /api/v1/admin/zones/{code}/reject:
+    post:
+      summary: Rechaza una zona pendiente (administrador)
+      parameters:
+        - { name: code, in: path, required: true, schema: { type: string } }
+        - { name: X-Admin-Token, in: header, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Zona rechazada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZoneSummary" }
+        "401": { description: Token inválido }
+        "404": { description: No hay una solicitud pendiente con ese código }
 components:
   schemas:
     Strategy:
@@ -155,3 +232,22 @@ components:
         months:
           type: array
           items: { $ref: "#/components/schemas/MonthlyObservation" }
+    ZoneSummary:
+      type: object
+      properties:
+        code: { type: string, example: somoto-madriz-1a2b }
+        name: { type: string }
+        minLon: { type: number }
+        minLat: { type: number }
+        maxLon: { type: number }
+        maxLat: { type: number }
+        status: { type: string, enum: [pending, approved, rejected] }
+    ZoneRequest:
+      type: object
+      required: [name, minLon, minLat, maxLon, maxLat]
+      properties:
+        name: { type: string, minLength: 3, maxLength: 60 }
+        minLon: { type: number, description: Oeste, minimum: -88.0 }
+        minLat: { type: number, description: Sur, minimum: 10.5 }
+        maxLon: { type: number, description: Este, maximum: -82.5 }
+        maxLat: { type: number, description: Norte, maximum: 15.5 }
