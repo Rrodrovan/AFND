@@ -29,6 +29,21 @@ journalctl -u terrashift-sync.service -f
 
 Estado: `systemctl list-timers terrashift-sync.timer` y `curl -s http://localhost:8080/api/v1/zones/piloto/data-status`.
 
+## Actualizar la unidad de sincronización
+
+Si cambia `deploy/terrashift-sync.service` o el timer, **no los copies con `cp`**: el archivo del repo trae los marcadores `__USER__` y `__REPO__` y systemd rechaza la unidad (y mata el sync en curso). Reinstálalos sustituyéndolos, igual que hace `setup-sync.sh`:
+
+```bash
+REPO=$HOME/AFND; ME=$(whoami)
+for unit in terrashift-sync.service terrashift-sync.timer; do
+  sed -e "s|__USER__|$ME|g" -e "s|__REPO__|$REPO|g" "$REPO/deploy/$unit" | sudo tee "/etc/systemd/system/$unit" >/dev/null
+done
+sudo systemctl daemon-reload
+systemctl cat terrashift-sync.service | grep -E "User=|WorkingDirectory=|ExecStart="   # no debe quedar ningún "__"
+```
+
+Hazlo cuando el servicio no esté corriendo (`systemctl is-active terrashift-sync.service` → `inactive`), porque `daemon-reload` con una unidad inválida termina el sync.
+
 ## Actualizar el backend
 
 Los endpoints nuevos (`/data-status`, `/observations/monthly`) requieren recompilar:
